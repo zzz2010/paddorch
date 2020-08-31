@@ -238,7 +238,11 @@ class Resize(object):
         self.interpolation = interpolation
 
     def __call__(self, img):
-        return F.resize(img, self.size, self.interpolation)
+        from PIL import Image
+        img = Image.fromarray(np.uint8(img))
+        return np.array(img.resize(self.size[::-1], 2))
+
+
 
 
 class RandomResizedCrop(object):

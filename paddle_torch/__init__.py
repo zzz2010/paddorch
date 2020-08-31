@@ -146,6 +146,43 @@ def zeros(*size, out=None, dtype="float32",device=None):
 def ones_like(x, out=None,device=None):
     return varbase_to_tensor(fluid.layers.ones_like(x,out))
 
+def cov(m, rowvar=False, inplace=False):
+    '''Estimate a covariance matrix given data.
+
+    Covariance indicates the level to which two variables vary together.
+    If we examine N-dimensional samples, `X = [x_1, x_2, ... x_N]^T`,
+    then the covariance matrix element `C_{ij}` is the covariance of
+    `x_i` and `x_j`. The element `C_{ii}` is the variance of `x_i`.
+
+    Args:
+        m: A 1-D or 2-D array containing multiple variables and observations.
+            Each row of `m` represents a variable, and each column a single
+            observation of all those variables.
+        rowvar: If `rowvar` is True, then each row represents a
+            variable, with observations in the columns. Otherwise, the
+            relationship is transposed: each column represents a variable,
+            while the rows contain observations.
+
+    Returns:
+        The covariance matrix of the variables.
+    '''
+    if m.dim() > 2:
+        raise ValueError('m has more than 2 dimensions')
+    if m.dim() < 2:
+        m = m.view(1, -1)
+    if not rowvar and m.size(0) != 1:
+        m = m.permute(1, 0)
+    # m = m.type(torch.double)  # uncomment this line if desired
+    fact = 1.0 / (m.size(1) - 1)
+    if inplace:
+        m -= mean(m, dim=1, keepdim=True)
+    else:
+        m = m -  mean(m, dim=1, keepdim=True)
+    m = paddle_torch.Tensor(m)
+
+    mt = m.permute(1, 0)  # if complex: mt = m.t().conj()
+    return fact * fluid.layers.matmul(m, mt)
+
 
 def zeros_like(x, out=None,device=None):
     return varbase_to_tensor(fluid.layers.zeros_like(x,out))
@@ -194,11 +231,8 @@ def flatten(x,dim=1):
     x=fluid.layers.flatten(x ,axis=dim)
     return varbase_to_tensor(x)
 
-
 def clamp(input, min, max, out=None) :
     return varbase_to_tensor(fluid.layers.clip(input, min, max))
-
-
 
 def  no_grad(func=None):
     return fluid.dygraph.no_grad(func)
@@ -225,7 +259,6 @@ def save(dict_obj, filename):
         os.makedirs(filename,exist_ok=True)
         for key in dict_obj:
             fluid.dygraph.save_dygraph( dict_obj[key], filename+"/"+str(key) )
-
 
 
 def load(file_path,map_location=None) :
