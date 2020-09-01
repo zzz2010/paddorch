@@ -1,14 +1,14 @@
 import paddle.fluid as fluid
 import paddle
-import paddle_torch.cuda
-import paddle_torch.nn
+import paddorch.cuda
+import paddorch.nn
 import os
-import paddle_torch.nn.functional
-import paddle_torch.nn.init
+import paddorch.nn.functional
+import paddorch.nn.init
 from paddle.fluid import dygraph
 import numpy as np
-from paddle_torch.tensor import varbase_to_tensor,Tensor
-import paddle_torch.optim
+from paddorch.tensor import varbase_to_tensor,Tensor
+import paddorch.optim
 
 double="float32"
 
@@ -178,7 +178,7 @@ def cov(m, rowvar=False, inplace=False):
         m -= mean(m, dim=1, keepdim=True)
     else:
         m = m -  mean(m, dim=1, keepdim=True)
-    m = paddle_torch.Tensor(m)
+    m = paddorch.Tensor(m)
 
     mt = m.permute(1, 0)  # if complex: mt = m.t().conj()
     return fact * fluid.layers.matmul(m, mt)

@@ -1,8 +1,8 @@
 import numpy as np
 
-import paddle_torch as torch
-import paddle_torch.nn as nn
-from paddle_torch.nn.parameter import Parameter
+import paddorch as torch
+import paddorch.nn as nn
+from paddorch.nn.parameter import Parameter
 
 
 class ResnetGenerator(nn.Module):

@@ -9,7 +9,7 @@ import nn
 import numpy as np
 import math
 
-from paddle_torch.vision.models.wing import FAN
+from paddorch.vision.models.wing import FAN
 
 def eval_pytorch_model(args):
     import   torch
@@ -287,7 +287,7 @@ def eval_pytorch_model(args):
 
 def build_model(args):
     import torch as pytorch
-    from paddle_torch.convert_pretrain_model import load_pytorch_pretrain_model
+    from paddorch.convert_pretrain_model import load_pytorch_pretrain_model
     pytorch_state_dict = pytorch.load("../../expr/checkpoints/celeba_hq/100000_nets_ema.pt",
                                       map_location=pytorch.device('cpu'))
 
@@ -311,8 +311,8 @@ def build_model(args):
     s_out=style_encoder(pytorch.FloatTensor(x), pytorch.LongTensor(y) )
 
     import paddle.fluid as fluid
-    import paddle_torch as torch
-    import paddle_torch.nn.functional as F
+    import paddorch as torch
+    import paddorch.nn.functional as F
     # place = fluid.CPUPlace()
     place = fluid.CUDAPlace(0)
 

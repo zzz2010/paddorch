@@ -1,7 +1,7 @@
-import paddle_torch
-from paddle_torch.tensor import  new_full
+import paddorch
+from paddorch.tensor import  new_full
 from  paddle import fluid
-# class Parameter(paddle_torch.Tensor):
+# class Parameter(paddorch.Tensor):
 #     def __init__(self):
 #         fluid.create_random_int_lodtensor()
 #         fluid.create_lod_tensor()

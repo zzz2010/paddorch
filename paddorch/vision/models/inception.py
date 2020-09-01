@@ -2,11 +2,11 @@ from __future__ import division
 
 from collections import namedtuple
 import warnings
-import paddle_torch as torch
-import paddle_torch.nn as nn
-import paddle_torch.nn.functional as F
+import paddorch as torch
+import paddorch.nn as nn
+import paddorch.nn.functional as F
 from paddle.fluid import dygraph
-from paddle_torch.tensor import Tensor
+from paddorch.tensor import Tensor
 import numpy as np
 from paddle import fluid
 

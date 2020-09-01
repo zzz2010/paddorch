@@ -1,9 +1,9 @@
 import paddle.fluid as fluid
 import paddle
-import paddle_torch.cuda
-import paddle_torch.nn
+import paddorch.cuda
+import paddorch.nn
 import os
-import paddle_torch.nn.functional
+import paddorch.nn.functional
 from paddle.fluid import dygraph
 import numpy as np
 

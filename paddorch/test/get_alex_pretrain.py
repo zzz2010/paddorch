@@ -3,8 +3,8 @@ import nn.functional as F
 import numpy as np
 import math
 import paddle.fluid as fluid
-import paddle_torch as torch
-from paddle_torch.vision.models.lpips import LPIPS
+import paddorch as torch
+from paddorch.vision.models.lpips import LPIPS
 
 
 
@@ -87,7 +87,7 @@ def eval_pytorch_model():
 
 
 if __name__ == '__main__':
-    from paddle_torch.convert_pretrain_model import load_pytorch_pretrain_model
+    from paddorch.convert_pretrain_model import load_pytorch_pretrain_model
     import torch as pytorch
     import torchvision
     pytorch_model=eval_pytorch_model()

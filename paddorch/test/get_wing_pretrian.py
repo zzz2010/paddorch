@@ -3,10 +3,10 @@ import nn.functional as F
 import numpy as np
 import math
 import paddle.fluid as fluid
-import paddle_torch as torch
+import paddorch as torch
 import cv2
 from skimage.filters import gaussian
-from paddle_torch.vision.models.wing import FAN, preprocess
+from paddorch.vision.models.wing import FAN, preprocess
 
 
 
@@ -271,7 +271,7 @@ def eval_pytorch_model():
 
 
 if __name__ == '__main__':
-    from paddle_torch.convert_pretrain_model import load_pytorch_pretrain_model
+    from paddorch.convert_pretrain_model import load_pytorch_pretrain_model
     import torch as pytorch
     import torchvision
 

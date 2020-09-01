@@ -25,7 +25,7 @@ import types
 import collections
 import warnings
 import traceback
-import paddle_torch
+import paddorch
 from . import functional as F
 
 if sys.version_info < (3, 3):

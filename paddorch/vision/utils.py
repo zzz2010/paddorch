@@ -1,4 +1,4 @@
-import paddle_torch as torch
+import paddorch as torch
 import math
 irange = range
 

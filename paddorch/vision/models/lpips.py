@@ -8,9 +8,9 @@ http://creativecommons.org/licenses/by-nc/4.0/ or send a letter to
 Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 """
 
-import paddle_torch as torch
-import paddle_torch.nn as nn
-from paddle_torch.vision import models
+import paddorch as torch
+import paddorch.nn as nn
+from paddorch.vision import models
 # from torchvision import models
 from paddle import fluid
 

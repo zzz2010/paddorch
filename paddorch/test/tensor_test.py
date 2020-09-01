@@ -1,7 +1,7 @@
 import numpy as np
 import math
 import paddle.fluid as fluid
-import paddle_torch as torch
+import paddorch as torch
 
 
 if __name__ == '__main__':

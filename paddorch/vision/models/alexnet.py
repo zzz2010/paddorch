@@ -1,8 +1,8 @@
-# import paddle_torch as torch
-# import paddle_torch.nn as nn
+# import paddorch as torch
+# import paddorch.nn as nn
 
-import  paddle_torch as torch
-import paddle_torch.nn as nn
+import  paddorch as torch
+import paddorch.nn as nn
 
 
 __all__ = ['AlexNet', 'alexnet']

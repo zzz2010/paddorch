@@ -1,5 +1,5 @@
 from . import BatchSampler
-import paddle_torch as torch
+import paddorch as torch
 
 class WeightedRandomSampler(BatchSampler):
     def __init__(self, weights,batch_size, num_samples=None, replacement=True):

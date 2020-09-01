@@ -2,12 +2,12 @@ import paddle.fluid as fluid
 import paddle
 from paddle.fluid.layer_helper import LayerHelper
 
-import paddle_torch.cuda
-import paddle_torch.nn
+import paddorch.cuda
+import paddorch.nn
 import os
-import paddle_torch.nn.functional
-import paddle_torch.nn.init
-import paddle_torch as torch
+import paddorch.nn.functional
+import paddorch.nn.init
+import paddorch as torch
 from paddle.fluid import dygraph
 import numpy as np
 

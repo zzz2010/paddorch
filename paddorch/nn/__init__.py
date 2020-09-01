@@ -2,11 +2,11 @@ import paddle.fluid as fluid
 from paddle.fluid import dygraph
 from paddle.fluid.dygraph import layers,Conv2D,Linear,InstanceNorm
 from paddle.fluid.dygraph import Layer
-import paddle_torch.nn.functional as F
+import paddorch.nn.functional as F
 from paddle.fluid.framework import Variable, in_dygraph_mode, OpProtoHolder, Parameter, _dygraph_tracer, _varbase_creator, default_main_program
 from paddle.fluid import core
 from paddle.fluid.data_feeder import convert_dtype, check_variable_and_dtype, check_type, check_dtype
-import paddle_torch.nn.utils
+import paddorch.nn.utils
 
 
 

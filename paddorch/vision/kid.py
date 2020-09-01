@@ -6,7 +6,7 @@ import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 import numpy as np
-import  paddle_torch as torch
+import  paddorch as torch
 from sklearn.metrics.pairwise import polynomial_kernel
 from scipy import linalg
 from cv2 import imread
@@ -17,7 +17,7 @@ except ImportError:
     # If not tqdm is not available, provide a mock version of it
     def tqdm(x): return x
 
-from paddle_torch.vision.models.inception import InceptionV3
+from paddorch.vision.models.inception import InceptionV3
 # from .models.lenet import LeNet5
 
 def get_activations(files, model, batch_size=50, dims=2048,

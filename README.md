@@ -1,4 +1,4 @@
-# Paddle_torch
+# paddorch
 
 ## Introduction
 PaddlePaddle is the DL framework developped by Baidu, and this library is aim to provide 

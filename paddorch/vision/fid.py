@@ -11,10 +11,10 @@ Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 import os
 import argparse
 
-import paddle_torch as torch
-import paddle_torch.nn as nn
+import paddorch as torch
+import paddorch.nn as nn
 import numpy as np
-from paddle_torch.vision.models.inception import InceptionV3
+from paddorch.vision.models.inception import InceptionV3
 from scipy import linalg
 
 from PIL import Image
@@ -25,11 +25,11 @@ from itertools import chain
 import os
 from paddle import fluid
 import random
-import paddle_torch as torch
-from paddle_torch.utils import data
-from paddle_torch.utils.data.sampler import WeightedRandomSampler
-from paddle_torch.vision import transforms
-from paddle_torch.vision.datasets import ImageFolder
+import paddorch as torch
+from paddorch.utils import data
+from paddorch.utils.data.sampler import WeightedRandomSampler
+from paddorch.vision import transforms
+from paddorch.vision.datasets import ImageFolder
 
 
 
