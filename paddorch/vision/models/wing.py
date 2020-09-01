@@ -19,9 +19,9 @@ from munch import Munch
 import numpy as np
 import cv2
 from skimage.filters import gaussian
-import paddle_torch as torch
-import paddle_torch.nn as nn
-import paddle_torch.nn.functional as F
+import paddorch as torch
+import paddorch.nn as nn
+import paddorch.nn.functional as F
 
 
 def get_preds_fromhm(hm):

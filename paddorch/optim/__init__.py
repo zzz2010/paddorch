@@ -1,6 +1,6 @@
 from paddle.fluid.optimizer import  AdamOptimizer
 from paddle import fluid
-import paddle_torch.optim.lr_scheduler
+import paddorch.optim.lr_scheduler
 def Adam(params ,
                     lr=0.001,
                     betas=None,
