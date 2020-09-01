@@ -55,14 +55,14 @@ class Tensor(dygraph.core.VarBase):
     def min(self):
         return torch.min(self)
 
-    def sum(self,dim=None, keep_dim=False):
-        return torch.sum(self,dim=dim,keep_dim=keep_dim)
+    def sum(self,dim=None, keepdim=False):
+        return torch.sum(self,dim=dim,keepdim=keepdim)
 
-    def mean(self,dim=None, keep_dim=False):
-        return torch.mean(self,dim=dim,keep_dim=keep_dim)
+    def mean(self,dim=None, keepdim=False):
+        return torch.mean(self,dim=dim,keepdim=keepdim)
 
-    def max(self,dim=None, keep_dim=False):
-        return torch.max(self,dim=dim,keep_dim=keep_dim)
+    def max(self,dim=None, keepdim=False):
+        return torch.max(self,dim=dim,keepdim=keepdim)
 
     def new_full(self, size, fill_value, dtype=None, device=None, requires_grad=False):
         return new_full( size, fill_value, dtype,requires_grad)
