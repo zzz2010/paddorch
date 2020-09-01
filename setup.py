@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="paddle_torch", # Replace with your own username
-    version="0.0.1",
+    name="paddorch", # Replace with your own username
+    version="0.0.2",
     author="Zhizhuo Zhang",
     author_email="zzz2010@gmail.com",
     description="paddle implementation for pytorch interface",
