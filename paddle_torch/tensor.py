@@ -55,8 +55,14 @@ class Tensor(dygraph.core.VarBase):
     def min(self):
         return torch.min(self)
 
-    def max(self):
-        return torch.max(self)
+    def sum(self,dim=None, keep_dim=False):
+        return torch.sum(self,dim=dim,keep_dim=keep_dim)
+
+    def mean(self,dim=None, keep_dim=False):
+        return torch.mean(self,dim=dim,keep_dim=keep_dim)
+
+    def max(self,dim=None, keep_dim=False):
+        return torch.max(self,dim=dim,keep_dim=keep_dim)
 
     def new_full(self, size, fill_value, dtype=None, device=None, requires_grad=False):
         return new_full( size, fill_value, dtype,requires_grad)
@@ -101,6 +107,9 @@ class Tensor(dygraph.core.VarBase):
             dim=[dim]
         x= fluid.layers.squeeze(self, dim)
         return varbase_to_tensor(x)
+
+    def pow(self,k):
+        return torch.pow(self,k)
 
     def dim(self) :
         return len(self.shape)
