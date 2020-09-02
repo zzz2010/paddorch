@@ -204,15 +204,19 @@ def load_tf_pretrain_model(paddle_model, tf_state_dict):
     '''
 
     paddle_weight=paddle_model.state_dict()
+    paddle_keys=[k for k, v in sorted(paddle_weight.items(), key=lambda item: np.product(item[1].shape) )]
+    tf_keys = [k for k, v in sorted(tf_state_dict.items(), key=lambda item: np.product(item[1].shape))]
+
+
     print("paddle_weight items:",len(paddle_weight))
     new_weight_dict=OrderedDict()
     torch_key_list=[]
-    for key in tf_state_dict.keys():
+    for key in tf_keys:
         if "num_batches_tracked" in key:
             continue
         torch_key_list.append(key)
 
-    for torch_key, paddle_key in zip(torch_key_list,paddle_weight.keys()):
+    for torch_key, paddle_key in zip(torch_key_list,paddle_keys):
         print(torch_key, paddle_key, tf_state_dict[torch_key].shape, paddle_weight[paddle_key].shape)
         if len(tf_state_dict[torch_key].shape)==0:
             continue
@@ -240,13 +244,13 @@ genA2B = ResnetGenerator(input_nc=3, output_nc=3, ngf=64, n_blocks=4, img_size=2
 tf_state_dict=load_weights("torch_GenA.npy")
 tf_state_dict_split_weight_bias=dict()
 for name in tf_state_dict:
-    name=name.replace("instance_layer_norm","ILN").replace("sub_","")
     for key in tf_state_dict[name]:
-        trim_name=".".join(name.split("/")[1:-2]).replace("_","").replace("adaptiveresblock","UpBlock")
+        name2 = name.replace("instance_layer_norm", "ILN").replace("sub_", "")
+        trim_name=".".join(name2.split("/")[1:-2]).replace("_","").replace("adaptiveresblock","UpBlock")
         if trim_name=="":
-            trim_name=name.replace("/",".")
+            trim_name=name2.replace("/",".")
         trim_name=trim_name+"."+key.replace("weights","weight")
-        print(name+"."+key.replace("weights","weight"),"|",tf_state_dict[name][key].shape)
+        print(name2+"."+key.replace("weights","weight"),"|",tf_state_dict[name][key].shape)
         tf_state_dict_split_weight_bias[trim_name]=tf_state_dict[name][key]
 
 

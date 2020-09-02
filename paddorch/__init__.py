@@ -258,7 +258,10 @@ def save(dict_obj, filename):
     else:
         os.makedirs(filename,exist_ok=True)
         for key in dict_obj:
-            fluid.dygraph.save_dygraph( dict_obj[key], filename+"/"+str(key) )
+            try:
+                fluid.dygraph.save_dygraph( dict_obj[key], filename+"/"+str(key) )
+            except Exception as E:
+                print(E)
 
 
 def load(file_path,map_location=None) :
