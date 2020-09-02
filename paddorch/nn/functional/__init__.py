@@ -19,6 +19,9 @@ def max_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, coun
 def tanh(x):
     return fluid.layers.tanh(x)
 
+def sigmoid(x):
+    return fluid.layers.sigmoid(x)
+
 def binary_cross_entropy_with_logits(logits, targets):
     return fluid.layers.sigmoid_cross_entropy_with_logits(logits, targets)
 
