@@ -8,6 +8,8 @@ from  paddle import fluid
 #         fluid.dygraph.layers.Layer.create_parameter()
 
 def Parameter(shape,fill_value):
+    if isinstance(shape,int):
+        shape=[shape]
     # return fluid.dygraph.layers.create_parameter(layer,shape,default_initializer=fluid.initializer.ConstantInitializer(value=fill_value))
     # return new_full(shape,fill_value)
     return fluid.layers.create_parameter(

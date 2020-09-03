@@ -3,34 +3,11 @@ from paddle.fluid import dygraph
 from paddle.fluid.dygraph import layers,Conv2D,Linear,InstanceNorm
 from paddle.fluid.dygraph import Layer
 import paddorch.nn.functional as F
-from paddle.fluid.framework import Variable, in_dygraph_mode, OpProtoHolder, Parameter, _dygraph_tracer, _varbase_creator, default_main_program
+from paddle.fluid.framework import Variable, in_dygraph_mode
+from .parameter import Parameter
 from paddle.fluid import core
 from paddle.fluid.data_feeder import convert_dtype, check_variable_and_dtype, check_type, check_dtype
 import paddorch.nn.utils
-
-
-
-def Conv2d(in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1,
-                 bias=True, padding_mode='zeros'):
-    bias_attr=None
-    if not bias:
-        bias_attr=False
-    else:
-        bias_attr = fluid.initializer.ConstantInitializer(value=0)
-
-    return dygraph.Conv2D( num_channels=in_channels,
-                 num_filters=out_channels,
-                 filter_size=kernel_size,
-                 stride=stride,
-                 padding=padding,
-                 dilation=dilation,
-                 groups=groups,
-                 param_attr=fluid.initializer.MSRAInitializer(),
-                 bias_attr=bias_attr ,
-                 use_cudnn=True,
-                 act=None,
-                 dtype='float32')
 
 
 
@@ -44,12 +21,17 @@ def clone_layer(layer):
 class Module(Layer):
     def __init__(self , name_scope=None, dtype=core.VarDesc.VarType.FP32):
         super(Module, self).__init__(name_scope,dtype)
+        self.register_buffer=dict()
 
     def load_state_dict(self,new_dict, strict=True):
         self.set_dict(new_dict, include_sublayers=True, use_structured_name=True)
 
     def add_module(self,name,layer):
         return self.add_sublayer(name,layer)
+
+    def modules(self):
+        return self.sublayers()
+
     def clone(self):
         import copy
         new_obj= Module()
@@ -61,6 +43,68 @@ class Module(Layer):
         return new_obj
     def to(self,device=None):
         return self
+
+#
+# def Linear(in_features, out_features, bias=True):
+#
+#     bias_attr=None
+#     if not bias:
+#         bias_attr=False
+#     else:
+#         bias_attr=fluid.initializer.ConstantInitializer(value=0)
+#     return dygraph.Linear(in_features, out_features, param_attr=fluid.initializer.MSRAInitializer(), bias_attr=bias_attr, act=None, dtype="float32")
+#
+#
+#
+# def Conv2d(in_channels, out_channels, kernel_size, stride=1,
+#                  padding=0, dilation=1, groups=1,
+#                  bias=True, padding_mode='zeros'):
+#     bias_attr=None
+#     if not bias:
+#         bias_attr=False
+#     else:
+#         bias_attr = fluid.initializer.ConstantInitializer(value=0)
+#
+#     return dygraph.Conv2D( num_channels=in_channels,
+#                  num_filters=out_channels,
+#                  filter_size=kernel_size,
+#                  stride=stride,
+#                  padding=padding,
+#                  dilation=dilation,
+#                  groups=groups,
+#                  param_attr=fluid.initializer.MSRAInitializer(),
+#                  bias_attr=bias_attr ,
+#                  use_cudnn=True,
+#                  act=None,
+#                  dtype='float32')
+#
+
+class Conv2d(dygraph.Conv2D):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
+                 padding=0, dilation=1, groups=1,
+                 bias=True, padding_mode='zeros'):
+        bias_attr = None
+        if not bias:
+            bias_attr = False
+        else:
+            bias_attr = fluid.initializer.ConstantInitializer(value=0)
+
+        super(Conv2d, self).__init__(num_channels=in_channels,
+                                     num_filters=out_channels,
+                                     filter_size=kernel_size,
+                                     stride=stride,
+                                     padding=padding,
+                                     dilation=dilation,
+                                     groups=groups,
+                                     param_attr=fluid.initializer.MSRAInitializer(),
+                                     bias_attr=bias_attr,
+                                     use_cudnn=True,
+                                     act=None,
+                                     dtype='float32')
+
+
+
+
 
 class InstanceNorm2d(Module):
     '''
@@ -123,15 +167,26 @@ class InstanceNorm2d(Module):
             type="instance_norm", inputs=inputs, outputs=outputs, attrs=attrs)
         return instance_norm_out
 #
+class Linear(dygraph.Linear):
+    def __init__(self,in_features, out_features, bias=True):
+        bias_attr = None
+        if not bias:
+            bias_attr = False
+        else:
+            bias_attr = fluid.initializer.ConstantInitializer(value=0)
+        super(Linear, self).__init__(in_features, out_features, param_attr=fluid.initializer.MSRAInitializer(), bias_attr=bias_attr, act=None, dtype="float32")
 
-def Linear(in_features, out_features, bias=True):
 
-    bias_attr=None
-    if not bias:
-        bias_attr=False
-    else:
-        bias_attr=fluid.initializer.ConstantInitializer(value=0)
-    return dygraph.Linear(in_features, out_features, param_attr=fluid.initializer.MSRAInitializer(), bias_attr=bias_attr, act=None, dtype="float32")
+class Embedding(dygraph.Embedding):
+    def __init__(self,num_embeddings: int, embedding_dim: int,
+                 padding_idx  = None, max_norm = None, norm_type: float = 2.0, scale_grad_by_freq: bool = False,
+                 sparse: bool = False, _weight = None):
+        super(Embedding,self).__init__(size=[num_embeddings,embedding_dim],
+                 is_sparse=sparse,
+                 is_distributed=False,
+                 padding_idx=padding_idx,
+                 param_attr=None,
+                 dtype='float32')
 
 def Dropout(p=0.5, inplace=False):
     return dygraph.Dropout(p,dropout_implementation='upscale_in_train')
@@ -192,6 +247,13 @@ class ReLU(Module):
     def forward(self, input):
         return F.relu(input )
 
+class AvgPool2d(Module):
+    def __init__(self, inplace=False):
+        super(AvgPool2d, self).__init__()
+
+
+    def forward(self, input):
+        return F.avg_pool2d(input )
 
 class Tanh(Module):
     def __init__(self, inplace=False):
