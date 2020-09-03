@@ -27,18 +27,21 @@ class LambdaLR(LearningRateDecay):
     """
 
     def __init__(self, optimizer, lr_lambda, last_epoch=-1):
-        self.optimizer = optimizer
+        if hasattr(optimizer,"_optimizer"): #support meta optimizer
+            self.optimizer=optimizer._optimizer
+        else:
+            self.optimizer = optimizer
 
         if not isinstance(lr_lambda, list) and not isinstance(lr_lambda, tuple):
-            self.lr_lambdas = [lr_lambda] * len(optimizer._parameter_list)
+            self.lr_lambdas = [lr_lambda] * len(self.optimizer._parameter_list)
         else:
-            if len(lr_lambda) != len(optimizer._parameter_list):
+            if len(lr_lambda) != len(self.optimizer._parameter_list):
                 raise ValueError("Expected {} lr_lambdas, but got {}".format(
-                    len(optimizer._parameter_list), len(lr_lambda)))
+                    len(self.optimizer._parameter_list), len(lr_lambda)))
             self.lr_lambdas = list(lr_lambda)
         self.last_epoch = last_epoch
-        self.base_lrs = [optimizer._learning_rate] * len(optimizer._parameter_list)
-        super(LambdaLR, self).__init__(optimizer, last_epoch)
+        self.base_lrs = [self.optimizer._learning_rate] * len(self.optimizer._parameter_list)
+        super(LambdaLR, self).__init__(self.optimizer, last_epoch)
 
 
     def state_dict(self):
