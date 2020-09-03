@@ -2,7 +2,7 @@ import paddle.fluid as fluid
 from paddle.fluid import dygraph
 from paddle.fluid.dygraph import layers,Conv2D,Linear,InstanceNorm
 from paddle.fluid.dygraph import Layer
-import paddorch.nn.functional as F
+from paddorch.nn import functional as F
 from paddle.fluid.framework import Variable, in_dygraph_mode
 from .parameter import Parameter
 from paddle.fluid import core

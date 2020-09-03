@@ -1,4 +1,4 @@
-import paddorch.nn as nn
+from paddorch import nn
 def spectral_norm(layer,dim=0,
                  power_iters=1,
                  eps=1e-12,

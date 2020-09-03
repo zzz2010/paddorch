@@ -27,7 +27,7 @@ import warnings
 import traceback
 import paddorch
 from . import functional as F
-
+from PIL import Image
 if sys.version_info < (3, 3):
     Sequence = collections.Sequence
     Iterable = collections.Iterable
@@ -238,9 +238,11 @@ class Resize(object):
         self.interpolation = interpolation
 
     def __call__(self, img):
-        from PIL import Image
         img = Image.fromarray(np.uint8(img))
-        return np.array(img.resize(self.size[::-1], 2))
+        if isinstance(self.size, int) :
+            return  np.array(img.resize([self.size,self.size], 2))
+        else:
+            return np.array(img.resize(self.size[::-1], 2))
 
 
 
