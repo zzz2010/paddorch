@@ -20,6 +20,19 @@ def chunk(self , chunks , dim ):
         out_list.append(varbase_to_tensor(fluid.layers.concat( [paddle.fluid.layers.unsqueeze(x, dim, name=None) for x in slices[st:(st+step)] ], axis=dim, name=None)))
     return out_list
 
+
+def squeeze(x,axes=[-1]):
+    return Tensor(fluid.layers.squeeze(x,axes))
+
+def split(x,batch_size):
+    last_index=x.shape[0]//batch_size*batch_size
+    Y= fluid.layers.split(x[:last_index],batch_size)
+    if last_index != x.shape[0]: ##handle not equal divide case
+        Y.append(x[last_index:])
+    return Y
+
+def matmul(x,y):
+    return Tensor(fluid.layers.matmul(x,y))
 def tensor(x,dtype=np.float32):
     if isinstance(x,list):
         x=np.array(x,dtype=dtype)
@@ -140,8 +153,11 @@ def cat(tensors, dim=0, out=None):
 def ones(*size, out=None, dtype="float32",device=None):
     return varbase_to_tensor(fluid.layers.ones(size,dtype))
 
-def zeros(*size, out=None, dtype="float32",device=None):
-    return varbase_to_tensor(fluid.layers.zeros(size,dtype))
+def zeros(*size, out=None, dtype="float32",device=None,requires_grad=True):
+    X= varbase_to_tensor(fluid.layers.zeros(size,dtype))
+    if not requires_grad:
+        X.stop_gradient=True
+    return X
 
 def ones_like(x, out=None,device=None):
     return varbase_to_tensor(fluid.layers.ones_like(x,out))
@@ -187,8 +203,11 @@ def cov(m, rowvar=False, inplace=False):
 def zeros_like(x, out=None,device=None):
     return varbase_to_tensor(fluid.layers.zeros_like(x,out))
 
-def randn(*shape):
-    return varbase_to_tensor(fluid.layers.randn(shape))
+def randn(*shape, requires_grad=True):
+    X= varbase_to_tensor(fluid.layers.randn(shape))
+    if not requires_grad:
+        X.stop_gradient=True
+    return X
 
 def mean(input):
     return  fluid.layers.mean(input)

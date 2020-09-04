@@ -108,6 +108,14 @@ class Tensor(dygraph.core.VarBase):
         x= fluid.layers.squeeze(self, dim)
         return varbase_to_tensor(x)
 
+    def normal_(self,m,std):
+        fluid.layers.assign(fluid.layers.randn(self.shape)*std+m,self)
+        return self
+
+    def random_(self,m,std):
+        fluid.layers.assign(fluid.layers.uniform_random(self.shape,min=0.0, max=1.0) ,self)
+        return self
+
     def pow(self,k):
         return torch.pow(self,k)
 
@@ -181,3 +189,5 @@ class Tensor(dygraph.core.VarBase):
     def item(self):
         return self.numpy().flatten()[0]
 
+    def t(self):
+        return Tensor(fluid.layers.transpose(self,np.arange(len(self.shape))[::-1]))
