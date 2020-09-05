@@ -26,6 +26,13 @@ class Module(Layer):
     def load_state_dict(self,new_dict, strict=True):
         self.set_dict(new_dict, include_sublayers=True, use_structured_name=True)
 
+    def register_parameter(self,name,value):
+        self.__setattr__(name,Parameter(value))
+
+    def register_buffer(self,name,value):
+        X=Parameter(value)
+        X.stop_gradient=True
+        self.__setattr__(name,X)
     def add_module(self,name,layer):
         return self.add_sublayer(name,layer)
 
@@ -253,14 +260,16 @@ class AdaptiveAvgPool2d(Module):
         return F.adaptive_avg_pool2d(input, self.output_size)
 
 
-def BatchNorm2d(num_features, eps=1e-5, momentum=0.1, affine=True,
+
+class BatchNorm2d(dygraph.BatchNorm):
+    def __init__(self,num_features, eps=1e-5, momentum=0.1, affine=True,
                  track_running_stats=True):
-    param_attr=None
-    bias_attr=None
-    if not affine:
-        param_attr=False
-        bias_attr=False
-    return dygraph.BatchNorm(num_features,
+        param_attr = None
+        bias_attr = None
+        if not affine:
+            param_attr = False
+            bias_attr = False
+        super(BatchNorm2d, self).__init__(num_features,
                  act=None,
                  is_test=False,
                  momentum=momentum,
@@ -273,8 +282,32 @@ def BatchNorm2d(num_features, eps=1e-5, momentum=0.1, affine=True,
                  moving_mean_name=None,
                  moving_variance_name=None,
                  do_model_average_for_mean_and_var=True,
-                 use_global_stats=False,
-                 trainable_statistics=False)
+                 use_global_stats=True,
+                 trainable_statistics=track_running_stats)
+
+#
+# def BatchNorm2d(num_features, eps=1e-5, momentum=0.1, affine=True,
+#                  track_running_stats=True):
+#     param_attr=None
+#     bias_attr=None
+#     if not affine:
+#         param_attr=False
+#         bias_attr=False
+#     return dygraph.BatchNorm(num_features,
+#                  act=None,
+#                  is_test=False,
+#                  momentum=momentum,
+#                  epsilon=eps,
+#                  param_attr=param_attr,
+#                  bias_attr=bias_attr,
+#                  dtype='float32',
+#                  data_layout='NCHW',
+#                  in_place=False,
+#                  moving_mean_name=None,
+#                  moving_variance_name=None,
+#                  do_model_average_for_mean_and_var=True,
+#                  use_global_stats=False,
+#                  trainable_statistics=False)
 
 class LeakyReLU(Module):
     def __init__(self,negative_slope=1e-2, inplace=False):

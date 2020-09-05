@@ -7,17 +7,17 @@ from  paddle import fluid
 #         fluid.create_lod_tensor()
 #         fluid.dygraph.layers.Layer.create_parameter()
 
-def Parameter(shape,fill_value=None,requires_grad=True):
-    if isinstance(shape,fluid.framework.core.VarBase):
-        X=Parameter(shape.shape,0.0)
-        fluid.layers.assign(shape,X)
+def Parameter(shape_or_tensor, fill_value=None, requires_grad=True):
+    if isinstance(shape_or_tensor, fluid.framework.core.VarBase):
+        X=Parameter(shape_or_tensor.shape, 0.0)
+        fluid.layers.assign(shape_or_tensor, X)
     else:
-        if isinstance(shape,int):
-            shape=[shape]
+        if isinstance(shape_or_tensor, int):
+            shape_or_tensor=[shape_or_tensor]
         # return fluid.dygraph.layers.create_parameter(layer,shape,default_initializer=fluid.initializer.ConstantInitializer(value=fill_value))
         # return new_full(shape,fill_value)
         X= fluid.layers.create_parameter(
-                        shape=shape,dtype="float32",
+                        shape=shape_or_tensor,dtype="float32",
                         attr=fluid.ParamAttr(name=None, initializer=fluid.initializer.ConstantInitializer(value=fill_value)),
                         is_bias=False)
     if not requires_grad:

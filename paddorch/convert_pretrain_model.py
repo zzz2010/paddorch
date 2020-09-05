@@ -7,6 +7,8 @@ def load_pytorch_pretrain_model(paddle_model, pytorch_state_dict):
     '''
 
     paddle_weight=paddle_model.state_dict()
+    print("paddle num_params:",len(paddle_weight))
+    print("torch num_params:", len(pytorch_state_dict))
     new_weight_dict=OrderedDict()
     torch_key_list=[]
     for key in pytorch_state_dict.keys():
