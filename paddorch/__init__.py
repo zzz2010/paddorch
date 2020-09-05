@@ -1,14 +1,15 @@
 import paddle.fluid as fluid
 import paddle
-import paddorch.cuda
-import paddorch.nn
+from . import cuda
+from . import  nn
 import os
 import paddorch.nn.functional
 import paddorch.nn.init
 from paddle.fluid import dygraph
 import numpy as np
 from paddorch.tensor import varbase_to_tensor,Tensor
-import paddorch.optim
+from . import optim
+from . import  vision
 
 double="float32"
 
