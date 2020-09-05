@@ -269,6 +269,9 @@ class BatchNorm2d(dygraph.BatchNorm):
         if not affine:
             param_attr = False
             bias_attr = False
+            use_global_stats=False
+        else:
+            use_global_stats=True
         super(BatchNorm2d, self).__init__(num_features,
                  act=None,
                  is_test=False,
@@ -282,7 +285,7 @@ class BatchNorm2d(dygraph.BatchNorm):
                  moving_mean_name=None,
                  moving_variance_name=None,
                  do_model_average_for_mean_and_var=True,
-                 use_global_stats=True,
+                 use_global_stats=use_global_stats,
                  trainable_statistics=track_running_stats)
 
 #
