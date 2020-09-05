@@ -44,41 +44,8 @@ class Module(Layer):
     def to(self,device=None):
         return self
 
-#
-# def Linear(in_features, out_features, bias=True):
-#
-#     bias_attr=None
-#     if not bias:
-#         bias_attr=False
-#     else:
-#         bias_attr=fluid.initializer.ConstantInitializer(value=0)
-#     return dygraph.Linear(in_features, out_features, param_attr=fluid.initializer.MSRAInitializer(), bias_attr=bias_attr, act=None, dtype="float32")
-#
-#
-#
-# def Conv2d(in_channels, out_channels, kernel_size, stride=1,
-#                  padding=0, dilation=1, groups=1,
-#                  bias=True, padding_mode='zeros'):
-#     bias_attr=None
-#     if not bias:
-#         bias_attr=False
-#     else:
-#         bias_attr = fluid.initializer.ConstantInitializer(value=0)
-#
-#     return dygraph.Conv2D( num_channels=in_channels,
-#                  num_filters=out_channels,
-#                  filter_size=kernel_size,
-#                  stride=stride,
-#                  padding=padding,
-#                  dilation=dilation,
-#                  groups=groups,
-#                  param_attr=fluid.initializer.MSRAInitializer(),
-#                  bias_attr=bias_attr ,
-#                  use_cudnn=True,
-#                  act=None,
-#                  dtype='float32')
-#
-
+def DataParallel(model):
+    return fluid.dygraph.DataParallel(model)
 class Conv2d(dygraph.Conv2D):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1,
@@ -248,12 +215,13 @@ class ReLU(Module):
         return F.relu(input )
 
 class AvgPool2d(Module):
-    def __init__(self, inplace=False):
+    def __init__(self, kernel_size,inplace=False):
         super(AvgPool2d, self).__init__()
+        self.kernel_size=kernel_size
 
 
     def forward(self, input):
-        return F.avg_pool2d(input )
+        return F.avg_pool2d(input,self.kernel_size )
 
 class Tanh(Module):
     def __init__(self, inplace=False):

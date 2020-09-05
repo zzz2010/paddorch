@@ -24,15 +24,18 @@ def chunk(self , chunks , dim ):
 def squeeze(x,axes=[-1]):
     return Tensor(fluid.layers.squeeze(x,axes))
 
-def split(x,batch_size):
+def split(x,batch_size,dim=0):
+
+    if not isinstance(batch_size,int):
+        batch_size=len(batch_size)
     last_index=x.shape[0]//batch_size*batch_size
-    Y= fluid.layers.split(x[:last_index],batch_size)
-    if last_index != x.shape[0]: ##handle not equal divide case
-        Y.append(x[last_index:])
+    Y= fluid.layers.split(x[:last_index],batch_size,dim=dim)
+    # if last_index != x.shape[0]: ##handle not equal divide case
+    #     Y.append(x[last_index:])
     return Y
 
 def matmul(x,y):
-    return Tensor(fluid.layers.matmul(x,y))
+    return Tensor(fluid.layers.matmul(x,y ))
 def tensor(x,dtype=np.float32):
     if isinstance(x,list):
         x=np.array(x,dtype=dtype)
@@ -270,17 +273,18 @@ def save(dict_obj, filename):
     '''
     save dict of state dict as a folder , or state dict as a file
     '''
-    if check_if_state_dict(dict_obj):
-        if filename.endswith(".pdparams"):
-            filename=filename.replace(".pdparams","")
-        fluid.dygraph.save_dygraph(dict_obj,filename)
-    else:
-        os.makedirs(filename,exist_ok=True)
-        for key in dict_obj:
-            try:
-                fluid.dygraph.save_dygraph( dict_obj[key], filename+"/"+str(key) )
-            except Exception as E:
-                print(E)
+    try:
+        if check_if_state_dict(dict_obj):
+            if filename.endswith(".pdparams"):
+                filename=filename.replace(".pdparams","")
+            fluid.dygraph.save_dygraph(dict_obj,filename)
+        else:
+            os.makedirs(filename,exist_ok=True)
+            for key in dict_obj:
+
+                    fluid.dygraph.save_dygraph( dict_obj[key], filename+"/"+str(key) )
+    except Exception as E:
+        print(E)
 
 
 def load(file_path,map_location=None) :
@@ -297,3 +301,5 @@ def load(file_path,map_location=None) :
     return out_dict
 
 
+def tanh(x):
+    return fluid.layers.tanh(x)

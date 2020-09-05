@@ -112,8 +112,9 @@ class Tensor(dygraph.core.VarBase):
         fluid.layers.assign(fluid.layers.randn(self.shape)*std+m,self)
         return self
 
-    def random_(self,m,std):
-        fluid.layers.assign(fluid.layers.uniform_random(self.shape,min=0.0, max=1.0) ,self)
+    def random_(self,low,high):
+
+        fluid.layers.assign(fluid.layers.randint(low,high,self.shape) ,self)
         return self
 
     def pow(self,k):

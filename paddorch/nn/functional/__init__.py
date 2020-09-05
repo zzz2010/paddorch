@@ -19,8 +19,30 @@ def max_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, coun
 def tanh(x):
     return fluid.layers.tanh(x)
 
+def embedding(x, weight):
+    return fluid.layers.embedding(fluid.layers.reshape(x,[-1,1]), size=weight.shape,param_attr=NumpyArrayInitializer(weight.numpy()))
+
+
+def batch_norm(x,  running_mean, running_var, weight=None, bias=None,
+               training=False, momentum=0.1, eps=1e-5):
+    layer_object=fluid.dygraph.BatchNorm(x.shape[1],momentum=momentum,epsilon=eps,trainable_statistics=training)
+    fluid.layers.assign(running_mean,layer_object._mean)
+    fluid.layers.assign(running_var, layer_object._variance)
+    if weight is not None:
+        fluid.layers.assign(weight, layer_object.weight)
+    if bias is not None:
+        fluid.layers.assign(bias, layer_object.bias)
+    return layer_object(x)
+
+
+
+#TODO: need to do unit test to confirm this function
 def linear(input, weight, bias=None):
-    return fluid.layers.matmul(input,weight)+bias
+    layer_obj=fluid.dygraph.Linear(input.shape[1],weight.shape[1])
+    fluid.layers.assign(weight,layer_obj.weight)
+    if bias is not None:
+        fluid.layers.assign(bias, layer_obj.bias)
+    return layer_obj(input)
 
 def normalize(input, p=2, dim=1, eps=1e-12, out=None):
     return torch.Tensor(fluid.layers.l2_normalize(input,axis=dim,epsilon=eps))
@@ -57,6 +79,8 @@ def interpolate(input, size=None, scale_factor=None, mode='nearest', align_corne
 def conv2d(x, weight, bias=None, stride=1, padding=1,dilation=1, groups=1):
     if bias is None:
         bias_attr=False
+    else:
+        bias_attr=NumpyArrayInitializer(bias.numpy())
     return fluid.layers.conv2d(x , num_filters=weight.shape[0],filter_size=weight.shape[-2:],stride=stride,padding=padding,dilation=dilation,groups=groups,
             param_attr=fluid.ParamAttr(initializer=NumpyArrayInitializer(weight.numpy())),bias_attr=bias_attr)
 

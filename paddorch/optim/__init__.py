@@ -6,7 +6,7 @@ class Adam(AdamOptimizer):
     def __init__(self,params ,
                     lr=0.001,
                     betas=None,
-                    weight_decay=None,eps=1e-8,grad_clip=None,lazy_mode=False):
+                    weight_decay=None,eps=1e-8,grad_clip=fluid.clip.GradientClipByGlobalNorm(5.0),lazy_mode=False):
         if betas is None:
             betas = [0.9, 0.999]
         if weight_decay is None:
