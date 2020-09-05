@@ -285,7 +285,7 @@ class BatchNorm2d(dygraph.BatchNorm):
                  moving_variance_name=None,
                  do_model_average_for_mean_and_var=True,
                  use_global_stats=False,
-                 trainable_statistics=track_running_stats)
+                 trainable_statistics=False)
 
 #
 # def BatchNorm2d(num_features, eps=1e-5, momentum=0.1, affine=True,
