@@ -21,6 +21,19 @@ def chunk(self , chunks , dim ):
         out_list.append(varbase_to_tensor(fluid.layers.concat( [paddle.fluid.layers.unsqueeze(x, dim, name=None) for x in slices[st:(st+step)] ], axis=dim, name=None)))
     return out_list
 
+def trace(x, offset=0, dim1=0, dim2=1, out=None):
+    return Tensor(fluid.layers.trace(x,offset,dim1,dim2,out))
+
+
+def bmm(x,y):
+    return Tensor(fluid.layers.bmm(x,y))
+def eye(n , m ):
+    return Tensor(fluid.layers.eye(n,m))
+
+def dot(x,y):
+    return Tensor(fluid.layers.dot(x,y))
+def mm(x,y):
+    return matmul(x,y)
 
 def squeeze(x,axes=[-1]):
     return Tensor(fluid.layers.squeeze(x,axes))
@@ -78,9 +91,21 @@ def take(x,indices):
     if len(indices[0]) == 1:
         return stack([x[a[0]] for a in indices])
 
+def linspace(start, stop, num, dtype="float32"):
+    return Tensor(fluid.layers.linspace(start, stop, num, dtype))
+
+def randint(low, high, size ,
+           dtype="int64", requires_grad=False):
+    return Tensor(fluid.layers.randint(low,
+            high=high,
+            shape=size,
+            out=None,
+            dtype=dtype,
+            device=None,
+            stop_gradient=not requires_grad))
+
 def copy(src,target):
-    target.set_value(src)
-    # fluid.layers.assign(src,target)
+    fluid.layers.assign(src,target)
 def rsqrt(x):
     return varbase_to_tensor(paddle.fluid.layers.rsqrt(x, name=None))
 
@@ -293,6 +318,7 @@ def load(file_path,map_location=None) :
     out_dict=dict()
     if os.path.isdir(file_path):
         for fn in glob.glob(file_path+"/*.pdparams"):
+            print(fn)
             key=os.path.basename(fn).replace(".pdparams","")
             out_dict[key]=fluid.dygraph.load_dygraph(fn)[0]
 

@@ -74,7 +74,7 @@ def get_activations(files, model, batch_size=50, dims=2048,
 
         batch = torch.Tensor(images).astype("float32")
         if cuda:
-            batch = batch.cuda()
+            batch = batch.
 
         pred = model(batch)
 
@@ -98,9 +98,9 @@ def extract_lenet_features(imgs, net):
     if imgs[0].min() < -0.001:
       imgs = (imgs + 1)/2.0
     print(imgs.shape, imgs.min(), imgs.max())
-    imgs = torch.from_numpy(imgs).cuda()
+    imgs = torch.from_numpy(imgs).
     for i, images in enumerate(imgs):
-        feats.append(net.extract_features(images).detach().cpu().numpy())
+        feats.append(net.extract_features(images).detach().numpy())
     feats = np.vstack(feats)
     return feats
 
@@ -140,7 +140,7 @@ def calculate_kid_given_paths(paths, batch_size, cuda,   model_path='inception',
     #     model = LeNet5()
     #     model.load_state_dict(torch.load('./models/lenet.pth'))
     if cuda:
-       model.cuda()
+       model.
 
     act_true = _compute_activations(pths[0], model, batch_size, dims, cuda, model_path)
     pths = pths[1:]

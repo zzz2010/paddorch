@@ -257,7 +257,7 @@ def eval_pytorch_model():
             heatmaps = self.get_heatmap(x, b_preprocess=False)
             landmarks = []
             for i in range(x.size(0)):
-                pred_landmarks = get_preds_fromhm(heatmaps[i].cpu().unsqueeze(0))
+                pred_landmarks = get_preds_fromhm(heatmaps[i].unsqueeze(0))
                 landmarks.append(pred_landmarks)
             scale_factor = x.size(2) // heatmaps.size(2)
             landmarks = torch.cat(landmarks) * scale_factor
@@ -284,9 +284,9 @@ if __name__ == '__main__':
         model.eval()
         pytorch_model=eval_pytorch_model()
         pytorch_model.eval()
-        pytorch_model.cuda()
-        torch_output = pytorch_model(pytorch.FloatTensor(x).cuda())[1][0]
-        pytorch_model.cpu()
+        pytorch_model.
+        torch_output = pytorch_model(pytorch.FloatTensor(x).)[1][0]
+        pytorch_model
         pytorch_state_dict=pytorch_model.state_dict()
         load_pytorch_pretrain_model(model, pytorch_state_dict)
         torch.save(model.state_dict(),"wing")

@@ -109,7 +109,7 @@ class Inception3(nn.Module):
                 import scipy.stats as stats
                 stddev = m.stddev if hasattr(m, 'stddev') else 0.1
                 X = stats.truncnorm(-2, 2, scale=stddev)
-                values = torch.as_tensor(X.rvs(np.prod(m.weight.shape) ), dtype=m.weight.dtype)
+                values = torch.as_tensor(X.rvs(np.prod(m.weight.shape) ).astype("float32"))
                 values = values.view(*m.weight.shape)
                 with torch.no_grad():
                     fluid.layers.assign(values,m.weight)

@@ -54,8 +54,8 @@ def eval_pytorch_model():
                 self.lpips_weights.append(Conv1x1(channels, 1))
             self._load_lpips_weights()
             # imagenet normalization for range [-1, 1]
-            self.mu = torch.tensor([-0.03, -0.088, -0.188]).view(1, 3, 1, 1).cuda()
-            self.sigma = torch.tensor([0.458, 0.448, 0.450]).view(1, 3, 1, 1).cuda()
+            self.mu = torch.tensor([-0.03, -0.088, -0.188]).view(1, 3, 1, 1).
+            self.sigma = torch.tensor([0.458, 0.448, 0.450]).view(1, 3, 1, 1).
 
         def _load_lpips_weights(self):
             own_state_dict = self.state_dict()
@@ -91,14 +91,14 @@ if __name__ == '__main__':
     import torch as pytorch
     import torchvision
     pytorch_model=eval_pytorch_model()
-    pytorch_model.cuda()
+    pytorch_model.
     place = fluid.CPUPlace()
     x=np.ones((1,3,256,256)).astype("float32")
     y = np.zeros((1, 3, 256, 256)).astype("float32")
     pytorch_model.eval()
-    torch_output=pytorch_model(pytorch.FloatTensor(x).cuda(),pytorch.FloatTensor(y).cuda()).detach().cpu().numpy()
+    torch_output=pytorch_model(pytorch.FloatTensor(x).,pytorch.FloatTensor(y).).detach().numpy()
 
-    pytorch_model.cpu()
+    pytorch_model
 
     with fluid.dygraph.guard(place=place):
         model=LPIPS()

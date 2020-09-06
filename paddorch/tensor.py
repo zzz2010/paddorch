@@ -108,6 +108,10 @@ class Tensor(dygraph.core.VarBase):
         x= fluid.layers.squeeze(self, dim)
         return varbase_to_tensor(x)
 
+    def bmm(self,x):
+        return Tensor(fluid.layers.bmm(self,x))
+    def sqrt(self):
+        return torch.sqrt(self)
     def normal_(self,m,std):
         fluid.layers.assign(fluid.layers.randn(self.shape)*std+m,self)
         return self
@@ -135,10 +139,13 @@ class Tensor(dygraph.core.VarBase):
     def float(self):
         return self.astype('float32')
 
+    def dot(self,x):
+        return torch.dot(self,x)
     def add_(self,x):
         self.set_value(x+self)
         return self
-
+    def matmul(self,y):
+        return torch.matmul(self,y)
     def expand(self,*sizes):
         ##handle -1 case
         expand_times=[ x//y if x>=y else 1 for x,y in zip(sizes,self.shape) ]
@@ -153,6 +160,8 @@ class Tensor(dygraph.core.VarBase):
         fluid.layers.assign(src,self)
         return self
 
+    def mm(self,x):
+        return torch.mm(self,x)
     def mul(self,x):
         return varbase_to_tensor(self*x)
 

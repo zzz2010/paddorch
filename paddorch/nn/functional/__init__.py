@@ -19,6 +19,15 @@ def max_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, coun
 def tanh(x):
     return fluid.layers.tanh(x)
 
+def dropout(input, p=0.5, training=True, inplace=False):
+    return torch.Tensor(fluid.layers.dropout(input,
+            p,
+            is_test=not training,
+         dropout_implementation='upscale_in_train'))
+
+def softmax(input, dim=None, _stacklevel=3, dtype=None):
+    return torch.Tensor(fluid.layers.softmax(input,axis=dim))
+
 def embedding(x, weight):
     return fluid.layers.embedding(fluid.layers.reshape(x,[-1,1]), size=weight.shape,param_attr=NumpyArrayInitializer(weight.numpy()))
 

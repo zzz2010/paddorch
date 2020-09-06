@@ -74,10 +74,10 @@ if __name__ == '__main__':
         model.eval()
         pytorch_model=eval_pytorch_model()
         pytorch_model.eval()
-        pytorch_model.cuda()
+        pytorch_model.
         x=np.ones((1,3,256,256)).astype("float32")
-        torch_output=pytorch_model(pytorch.FloatTensor(x).cuda())
-        pytorch_model.cpu()
+        torch_output=pytorch_model(pytorch.FloatTensor(x).)
+        pytorch_model
         pytorch_state_dict=pytorch_model.state_dict()
         load_pytorch_pretrain_model(model, pytorch_state_dict)
         torch.save(model.state_dict(),"inception_v3_pretrained")

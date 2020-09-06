@@ -57,8 +57,8 @@ class LPIPS(nn.Module):
         if pretrained_weights_fn is not None:
             self._load_lpips_weights(pretrained_weights_fn)
         # imagenet normalization for range [-1, 1]
-        self.mu = torch.tensor([-0.03, -0.088, -0.188]).view(1, 3, 1, 1).cuda()
-        self.sigma = torch.tensor([0.458, 0.448, 0.450]).view(1, 3, 1, 1).cuda()
+        self.mu = torch.tensor([-0.03, -0.088, -0.188]).view(1, 3, 1, 1)
+        self.sigma = torch.tensor([0.458, 0.448, 0.450]).view(1, 3, 1, 1)
 
     def _load_lpips_weights(self,pretrained_weights_fn):
         own_state_dict = self.state_dict()

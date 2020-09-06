@@ -266,7 +266,7 @@ class FAN(nn.Module):
         heatmaps = self.get_heatmap(x, b_preprocess=False)
         landmarks = []
         for i in range(x.size(0)):
-            pred_landmarks = get_preds_fromhm(heatmaps[i].cpu().unsqueeze(0))
+            pred_landmarks = get_preds_fromhm(heatmaps[i].unsqueeze(0))
             landmarks.append(pred_landmarks)
         scale_factor = x.size(2) // heatmaps.size(2)
         landmarks = torch.cat(landmarks) * scale_factor
@@ -280,7 +280,7 @@ class FAN(nn.Module):
 
 def tensor2numpy255(tensor):
     """Converts torch tensor to numpy array."""
-    return ((tensor.permute(1, 2, 0).cpu().numpy() * 0.5 + 0.5) * 255).astype('uint8')
+    return ((tensor.permute(1, 2, 0).numpy() * 0.5 + 0.5) * 255).astype('uint8')
 
 
 def np2tensor(image):
@@ -301,7 +301,7 @@ class FaceAligner():
     def align(self, imgs, output_size=256):
         ''' imgs = torch.CUDATensor of BCHW '''
         imgs = imgs.to(self.device)
-        landmarkss = self.fan.get_landmark(imgs).cpu().numpy()
+        landmarkss = self.fan.get_landmark(imgs).numpy()
         for i, (img, landmarks) in enumerate(zip(imgs, landmarkss)):
             img_np = tensor2numpy255(img)
             img_np, landmarks = pad_mirror(img_np, landmarks)
@@ -410,7 +410,7 @@ def align_faces(args, input_dir, output_dir):
     import os
     from torchvision import transforms
     from PIL import Image
-    from core.utils import save_image
+    from paddorch.vision.utils import save_image
 
     aligner = FaceAligner(args.wing_path, args.lm_path, args.img_size)
     transform = transforms.Compose([
