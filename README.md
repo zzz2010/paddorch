@@ -6,6 +6,9 @@ a PaddlePaddle wrapper for the common pytorch interface, so people can try out p
 pytorch code without much change.
 
 
+## install
+`pip install .`
+
 
 
 
