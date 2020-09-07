@@ -1,7 +1,7 @@
 import paddorch as torch
 import math
 irange = range
-
+import numpy as np
 
 def make_grid(tensor, nrow=8, padding=2,
               normalize=False, range=None, scale_each=False, pad_value=0):
@@ -77,17 +77,21 @@ def make_grid(tensor, nrow=8, padding=2,
     ymaps = int(math.ceil(float(nmaps) / xmaps))
     height, width = int(tensor.size(2) + padding), int(tensor.size(3) + padding)
     num_channels = tensor.size(1)
-    grid = tensor.new_full((num_channels, height * ymaps + padding, width * xmaps + padding), pad_value)
+    # grid = tensor.new_full((num_channels, height * ymaps + padding, width * xmaps + padding), pad_value)
+    grid =  np.zeros((num_channels, height * ymaps + padding, width * xmaps + padding))+pad_value
     k = 0
     for y in irange(ymaps):
         for x in irange(xmaps):
             if k >= nmaps:
                 break
-            grid.narrow(1, y * height + padding, height - padding)\
-                .narrow(2, x * width + padding, width - padding)\
-                .copy_(tensor[k])
+            # sub_grid=grid[:, (y * height + padding):(y * height + padding+height - padding) ][:,:,(x * width + padding):(x * width + padding+width - padding)]
+            # torch.copy(tensor[k],sub_grid)
+            grid[:, (y * height + padding):(y * height + padding+height - padding),(x * width + padding):(x * width + padding+width - padding) ]=tensor[k].numpy()
+            # torch.copy(tensor[k],torch.narrow(torch.narrow(grid,1, y * height + padding, height - padding)\
+            #     ,2, x * width + padding, width - padding) )
+
             k = k + 1
-    return grid
+    return torch.Tensor(grid)
 
 
 def save_image(tensor, fp, nrow=8, padding=2,

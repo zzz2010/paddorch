@@ -35,6 +35,9 @@ def dot(x,y):
 def mm(x,y):
     return matmul(x,y)
 
+def narrow(x, dim, start, length):
+    return  fluid.layers.slice(x,[dim],[start],[start+length] )
+
 def squeeze(x,axes=[-1]):
     return Tensor(fluid.layers.squeeze(x,axes))
 
@@ -105,7 +108,10 @@ def randint(low, high, size ,
             stop_gradient=not requires_grad))
 
 def copy(src,target):
+    # target.set_value(src)
+    # return target
     fluid.layers.assign(src,target)
+
 def rsqrt(x):
     return varbase_to_tensor(paddle.fluid.layers.rsqrt(x, name=None))
 

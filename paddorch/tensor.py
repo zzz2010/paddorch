@@ -157,7 +157,7 @@ class Tensor(dygraph.core.VarBase):
         return  self
 
     def copy_(self,src):
-        fluid.layers.assign(src,self)
+        torch.copy(src,self)
         return self
 
     def mm(self,x):
