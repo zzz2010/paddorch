@@ -4,8 +4,6 @@ import copy
 
 from munch import Munch
 
-import nn
-
 import numpy as np
 import math
 
@@ -288,7 +286,7 @@ def eval_pytorch_model(args):
 def build_model(args):
     import torch as pytorch
     from paddorch.convert_pretrain_model import load_pytorch_pretrain_model
-    pytorch_state_dict = pytorch.load("../../expr/checkpoints/celeba_hq/100000_nets_ema.pt",
+    pytorch_state_dict = pytorch.load("../../../starganv2_paddle/expr/checkpoints/celeba_hq/100000_nets_ema.pt",
                                       map_location=pytorch.device('cpu'))
 
     generator, mapping_network, style_encoder = eval_pytorch_model(args)
@@ -318,6 +316,8 @@ def build_model(args):
 
 
     with fluid.dygraph.guard(place=place):
+        import sys
+        sys.path.append("../../../starganv2_paddle")
         import core.model
 
 
@@ -401,9 +401,9 @@ def build_model(args):
         nets_ema_state_dict['mapping_network'] = mapping_network_ema.state_dict()
         nets_ema_state_dict['style_encoder'] = style_encoder_ema.state_dict()
 
-        torch.save(nets_ema_state_dict, "../../expr/checkpoints/celeba_hq/100000_nets_ema.ckpt")
+        torch.save(nets_ema_state_dict, "../../../starganv2_paddle/expr/checkpoints/celeba_hq/100000_nets_ema.ckpt")
         if args.w_hpf > 0:
-            fan = FAN(fname_pretrained="../../expr/checkpoints/wing.pdparams").eval()
+            fan = FAN(fname_pretrained="../../../starganv2_paddle/expr/checkpoints/wing.pdparams").eval()
             nets.fan = fan
             nets_ema.fan = fan
 

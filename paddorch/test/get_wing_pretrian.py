@@ -1,11 +1,9 @@
-import nn
-import nn.functional as F
+
 import numpy as np
 import math
 import paddle.fluid as fluid
 import paddorch as torch
-import cv2
-from skimage.filters import gaussian
+
 from paddorch.vision.models.wing import FAN, preprocess
 
 
@@ -266,7 +264,7 @@ def eval_pytorch_model():
 
 
 
-    return FAN(fname_pretrained="./wing.ckpt")
+    return FAN(fname_pretrained="../../../starganv2_paddle/expr/checkpoints/wing.pt")
 
 
 
@@ -278,19 +276,21 @@ if __name__ == '__main__':
     # place = fluid.CPUPlace()
     place = fluid.CUDAPlace(0)
     np.random.seed(0)
-    x=np.random.randn(1,3,256,256).astype("float32")
+    x=np.random.randn(11,3,256,256).astype("float32")
     with fluid.dygraph.guard(place=place):
         model=FAN()
         model.eval()
         pytorch_model=eval_pytorch_model()
         pytorch_model.eval()
-        pytorch_model.
-        torch_output = pytorch_model(pytorch.FloatTensor(x).)[1][0]
-        pytorch_model
+        pytorch_model.cuda()
+        torch_output = pytorch_model(pytorch.FloatTensor(x).cuda())
         pytorch_state_dict=pytorch_model.state_dict()
         load_pytorch_pretrain_model(model, pytorch_state_dict)
         torch.save(model.state_dict(),"wing")
-        paddle_output = model(torch.Tensor(x))[1][0]
+        paddle_output = model(torch.Tensor(x))
 
-        print("torch mean",torch_output.mean())
-        print("paddle mean", torch.mean(paddle_output).numpy())
+        print("torch mean",torch_output[0][0].shape,torch_output[0][0].mean().cpu().detach().numpy())
+        print("paddle mean",paddle_output[0][0].shape, torch.mean(paddle_output[0][0]).numpy())
+
+        print("torch mean",torch_output[1][0].shape,torch_output[1][0].mean().cpu().detach().numpy())
+        print("paddle mean",paddle_output[1][0].shape, torch.mean(paddle_output[1][0]).numpy())
