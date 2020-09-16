@@ -12,8 +12,10 @@ def constant_(x, val):
     x=fluid.layers.fill_constant(x.shape,x.dtype,val,out=x)
     return x
 
-def normal_(x,m,std):
-    fluid.layers.assign(np.random.randn(*x.shape).astype(np.float32)*std+m,x)
+def normal_(x,m=0,std=1):
+    y=fluid.layers.randn(x.shape)*std+m
+    fluid.layers.assign(y, x)
+    # fluid.layers.assign(np.random.randn(*x.shape).astype(np.float32)*std+m,x)
     return x
 
 

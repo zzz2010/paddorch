@@ -14,11 +14,6 @@ import numpy as np
 def varbase_to_tensor(x):
     return Tensor(x)
 
-    y2 =  new_full( x.shape, 0)
-    y=fluid.layers.assign(x)
-    y2.block=y.block
-    # fluid.layers.assign(x.gradient(), y.gradient())
-    return y2
 
 def new_full(size, fill_value, dtype=None,  requires_grad=False):
     if dtype is None:
@@ -31,7 +26,7 @@ def new_full(size, fill_value, dtype=None,  requires_grad=False):
 class Tensor(dygraph.core.VarBase):
     def __init__(self,*args, **kwargs):
 
-        if isinstance(args[0],dygraph.core.VarBase):
+        if isinstance(args[0],dygraph.core.VarBase) or isinstance(args[0],dygraph.core.LoDTensor):
 
             super(Tensor, self).__init__( args[0].dtype,args[0].shape,args[0].name,dygraph.core.VarDesc.VarType.LOD_TENSOR, True)
 
@@ -146,6 +141,9 @@ class Tensor(dygraph.core.VarBase):
         return self
     def matmul(self,y):
         return torch.matmul(self,y)
+
+    def norm(self,dim=-1, keepdim=True):
+        return torch.norm(self,dim=dim,keepdim=keepdim)
     def expand(self,*sizes):
         ##handle -1 case
         expand_times=[ x//y if x>=y else 1 for x,y in zip(sizes,self.shape) ]

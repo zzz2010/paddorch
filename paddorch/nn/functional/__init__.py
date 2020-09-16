@@ -94,6 +94,27 @@ def conv2d(x, weight, bias=None, stride=1, padding=1,dilation=1, groups=1):
             param_attr=fluid.ParamAttr(initializer=NumpyArrayInitializer(weight.numpy())),bias_attr=bias_attr)
 
 
+def conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1):
+    if bias is None:
+        bias_attr=False
+    else:
+        bias_attr=fluid.ParamAttr(initializer=NumpyArrayInitializer(bias.numpy()))
+    return torch.Tensor(fluid.layers.conv2d_transpose(input,
+                     weight.shape[0],
+                     output_size=None,
+                     filter_size=weight.shape[1],
+                     padding=padding,
+                     stride=stride,
+                     dilation=dilation,
+                     groups=groups,
+                     param_attr=fluid.ParamAttr(initializer=NumpyArrayInitializer(weight.numpy())),
+                     bias_attr=bias_attr,
+                     use_cudnn=True,
+                     act=None,
+                     name=None,
+                     data_format='NCHW'))
+
+
 # from torch.nn.functional import  l1_loss,mse_loss,binary_cross_entropy_with_logits
 #
 # def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):

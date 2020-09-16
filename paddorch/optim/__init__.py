@@ -1,7 +1,7 @@
 from paddle.fluid.optimizer import  AdamOptimizer
 from paddle import fluid
 from . import lr_scheduler
-
+from paddle.fluid.optimizer import Optimizer
 class Adam(AdamOptimizer):
     def __init__(self,params ,
                     lr=0.001,

@@ -51,14 +51,21 @@ def split(x,batch_size,dim=0):
     #     Y.append(x[last_index:])
     return Y
 
+def empty(*size):
+    return zeros(*size)
+
 def matmul(x,y):
     return Tensor(fluid.layers.matmul(x,y ))
 def tensor(x,dtype=np.float32):
     if isinstance(x,list):
         x=np.array(x,dtype=dtype)
+    if isinstance(x,int) or isinstance(x,np.int64):
+        return zeros(x)
     return Tensor(x)
 
 def FloatTensor(x):
+    if isinstance(x,int):
+        return zeros(x)
     return tensor(x)
 
 def abs(x):
@@ -72,6 +79,11 @@ def min(x,dim=None,keepdim=False):
 def full_like(x,fill_value):
     return Tensor.new_full(x,x.shape,fill_value)
 
+def norm(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
+    from .linalg import norm
+    if dim==-1:
+        dim=None
+    return Tensor(norm(input, p=p, axis=dim, keepdim=keepdim, out=out, name=None))
 
 
 def where(condition, x=None, y=None):

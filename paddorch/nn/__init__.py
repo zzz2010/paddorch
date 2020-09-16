@@ -8,7 +8,7 @@ from .parameter import Parameter
 from paddle.fluid import core
 from paddle.fluid.data_feeder import convert_dtype, check_variable_and_dtype, check_type, check_dtype
 import paddorch.nn.utils
-
+from . import init
 
 
 
@@ -53,6 +53,14 @@ class Module(Layer):
         return new_obj
     def to(self,device=None):
         return self
+
+    def cuda(self):
+        return self
+
+    def cpu(self):
+        return self
+
+
 
 def DataParallel(model):
     return fluid.dygraph.DataParallel(model)
@@ -214,6 +222,37 @@ class Upsample(Module):
             data_format=self.data_format)
 
         return out
+
+class ConvTranspose2d(fluid.dygraph.Conv2DTranspose):
+
+    def __init__(self, in_channels: int,
+        out_channels: int,
+        kernel_size,
+        stride = 1,
+        padding = 0,
+        output_padding = 0,
+        groups: int = 1,
+        bias: bool = True,
+        dilation: int = 1,
+        padding_mode: str = 'zeros'):
+        if bias == False:
+            bias_attr=False
+        else:
+            bias_attr=None
+        super(ConvTranspose2d,self).__init__(in_channels,
+                 out_channels,
+                 kernel_size,
+                 output_size=None,
+                 padding=padding,
+                 stride=stride,
+                 dilation=dilation,
+                 groups=groups,
+                 param_attr=None,
+                 bias_attr=bias_attr,
+                 use_cudnn=True,
+                 act=None,
+                 dtype='float32')
+
 
 
 class ReLU(Module):
