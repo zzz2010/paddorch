@@ -181,7 +181,8 @@ class Tensor(dygraph.core.VarBase):
     def contiguous(self):
         return self
 
-
+    def flip(self,dim):
+        return torch.flip(self,dim)
     def view(self,*size):
         x= fluid.layers.reshape(self,size)
 
@@ -192,10 +193,29 @@ class Tensor(dygraph.core.VarBase):
         return Tensor(x)
 
 
+    def add(self,x):
+        return Tensor(self+x)
 
+    def __add__(self, other):
+        return Tensor(super(Tensor, self).__add__(other) )
+    def __sub__(self, other):
+        return Tensor( super(Tensor, self).__sub__(other))
 
     def item(self):
         return self.numpy().flatten()[0]
 
     def t(self):
         return Tensor(fluid.layers.transpose(self,np.arange(len(self.shape))[::-1]))
+    
+    def __getitem__(self,args):
+        if isinstance(args[0],dygraph.core.VarBase):
+            if isinstance(args,tuple):
+                if len(args)==2:
+                    return torch.take(self, list(zip(args[0].numpy().astype(int).tolist(), args[1].numpy().astype(int).tolist())))
+                else:
+                    raise("not support more than 2 axis array indexing")
+            else:
+                return torch.take(self,
+                                  args[0].numpy().astype(int).tolist())
+
+        return Tensor(super(Tensor, self).__getitem__(args))

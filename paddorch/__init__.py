@@ -100,6 +100,9 @@ def where(condition, x=None, y=None):
         #         out.append(y[i])
         # return stack(out)
 
+def flip(self, dim):
+    return Tensor(fluid.layers.flip(self,dims=[dim]))
+
 def take(x,indices):
     if len(indices[0])==2:
         return stack([x[a[0],a[1]] for a in indices])

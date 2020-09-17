@@ -410,8 +410,8 @@ class RandomHorizontalFlip(object):
             print(fake_img.shape)
     """
 
-    def __init__(self, prob=0.5):
-        self.prob = prob
+    def __init__(self, p=0.5):
+        self.prob = p
 
     def __call__(self, img):
         if np.random.random() < self.prob:

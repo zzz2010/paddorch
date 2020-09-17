@@ -9,6 +9,7 @@ from paddle.fluid import core
 from paddle.fluid.data_feeder import convert_dtype, check_variable_and_dtype, check_type, check_dtype
 import paddorch.nn.utils
 from . import init
+from ..tensor import Tensor
 
 
 
@@ -18,10 +19,32 @@ def clone_layer(layer):
         new_obj.add_sublayer(name, clone_layer(layer))
     return new_obj
 
+
+def forward_post_hook(layer,input,output):
+    if isinstance(output,tuple):
+        return tuple([Tensor(x) if isinstance(x,dygraph.core.VarBase) else x for x in output])
+    else:
+        if isinstance(output,dygraph.core.VarBase) and not isinstance(output,Tensor):
+            return Tensor(output)
+        else:
+            return output
+
+def forward_pre_hook(layer,input):
+    if isinstance(input,tuple):
+        return tuple([Tensor(x) if isinstance(x,dygraph.core.VarBase) else x for x in input])
+    else:
+        if isinstance(input,dygraph.core.VarBase) and not isinstance(input,Tensor):
+            return Tensor(input)
+        else:
+            return input
+
 class Module(Layer):
     def __init__(self , name_scope=None, dtype=core.VarDesc.VarType.FP32):
         super(Module, self).__init__(name_scope,dtype)
         self.register_buffer=dict()
+
+        self.register_forward_post_hook(forward_post_hook)
+        self.register_forward_pre_hook(forward_pre_hook)
 
     def eval(self):
         super(Module, self).eval()
