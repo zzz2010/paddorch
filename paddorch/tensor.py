@@ -123,7 +123,7 @@ class Tensor(dygraph.core.VarBase):
         return len(self.shape)
 
     def clone(self):
-        y = self.new_full(self.shape, 0)
+        y = self.new_full(self.shape, 0,dtype=str(self.dtype).replace("VarType.","").lower().replace("fp32","float32") )
         fluid.layers.assign(self, y)
         return y
 
@@ -144,6 +144,7 @@ class Tensor(dygraph.core.VarBase):
 
     def norm(self,dim=-1, keepdim=True):
         return torch.norm(self,dim=dim,keepdim=keepdim)
+
     def expand(self,*sizes):
         ##handle -1 case
         expand_times=[ x//y if x>=y else 1 for x,y in zip(sizes,self.shape) ]
@@ -201,6 +202,12 @@ class Tensor(dygraph.core.VarBase):
     def __sub__(self, other):
         return Tensor( super(Tensor, self).__sub__(other))
 
+    def __div__(self, other_var):
+        return Tensor(super(Tensor, self).__div__(other_var))
+
+    def __mul__(self, other_var):
+        return Tensor(super(Tensor, self).__mul__(other_var))
+
     def item(self):
         return self.numpy().flatten()[0]
 
@@ -208,6 +215,9 @@ class Tensor(dygraph.core.VarBase):
         return Tensor(fluid.layers.transpose(self,np.arange(len(self.shape))[::-1]))
     
     def __getitem__(self,args):
+        from typing import   Iterable
+        if not isinstance(args,Iterable):
+            return Tensor(super(Tensor, self).__getitem__(args))
         if isinstance(args[0],dygraph.core.VarBase):
             if isinstance(args,tuple):
                 if len(args)==2:

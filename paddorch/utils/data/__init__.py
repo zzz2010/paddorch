@@ -1,6 +1,7 @@
 from paddle import fluid
 from paddle.fluid.io import  Dataset,BatchSampler
 import numpy as np
+import paddorch
 
 def default_collate_fn(batch):
     """
@@ -25,12 +26,12 @@ def default_collate_fn(batch):
     sample = batch[0]
     # dataset has only 1 field
     if isinstance(sample, np.ndarray):
-        return  np.stack(batch, axis=0) #[np.stack(batch, axis=0)]
+        return   np.stack(batch, axis=0)  #[np.stack(batch, axis=0)]
     if isinstance(sample, int) or isinstance(sample, np.int64):
-        return np.array(batch)
+        return  np.array(batch)
 
     if isinstance(sample, fluid.core.VarBase):
-        return  fluid.layers.stack(batch, axis=0) #[fluid.layers.stack(batch, axis=0)]
+        return  fluid.layers.stack(batch, axis=0)  #[fluid.layers.stack(batch, axis=0)]
 
     # batch each field
     slots = []
@@ -55,7 +56,7 @@ def DataLoader(dataset ,  batch_size=None ,
                                  places=[fluid.dygraph.framework._current_expected_place()],
                                  collate_fn=collate_fn,
                            batch_sampler=batch_sampler,
-                           use_shared_memory=pin_memory,
+                           use_shared_memory=False,
                            drop_last=drop_last,timeout=timeout,worker_init_fn=worker_init_fn)
 
 

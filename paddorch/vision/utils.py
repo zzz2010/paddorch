@@ -60,7 +60,7 @@ def make_grid(tensor, nrow=8, padding=2,
             if range is not None:
                 norm_ip(t, range[0], range[1])
             else:
-                norm_ip(t, float(t.min()), float(t.max()))
+                norm_ip(t, float(t.min()), float(t.max())+1e-20)
 
         if scale_each is True:
             for t in tensor:  # loop over mini-batch dimension

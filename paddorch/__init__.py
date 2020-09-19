@@ -80,10 +80,8 @@ def full_like(x,fill_value):
     return Tensor.new_full(x,x.shape,fill_value)
 
 def norm(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
-    from .linalg import norm
-    if dim==-1:
-        dim=None
-    return Tensor(norm(input, p=p, axis=dim, keepdim=keepdim, out=out, name=None))
+    from . import linalg
+    return Tensor(linalg.norm(input, p=p, axis=dim, keepdim=keepdim,   name=None))
 
 
 def where(condition, x=None, y=None):

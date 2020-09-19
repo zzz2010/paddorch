@@ -87,7 +87,7 @@ class Module(Layer):
 
 def DataParallel(model):
     return fluid.dygraph.DataParallel(model)
-class Conv2d(dygraph.Conv2D):
+class Conv2d(dygraph.Conv2D,Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1,
                  bias=True, padding_mode='zeros'):
@@ -175,7 +175,7 @@ class InstanceNorm2d(Module):
             type="instance_norm", inputs=inputs, outputs=outputs, attrs=attrs)
         return instance_norm_out
 #
-class Linear(dygraph.Linear):
+class Linear(dygraph.Linear,Module):
     def __init__(self,in_features, out_features, bias=True):
         bias_attr = None
         if not bias:
@@ -185,7 +185,7 @@ class Linear(dygraph.Linear):
         super(Linear, self).__init__(in_features, out_features, param_attr=fluid.initializer.MSRAInitializer(), bias_attr=bias_attr, act=None, dtype="float32")
 
 
-class Embedding(dygraph.Embedding):
+class Embedding(dygraph.Embedding,Module):
     def __init__(self,num_embeddings: int, embedding_dim: int,
                  padding_idx  = None, max_norm = None, norm_type: float = 2.0, scale_grad_by_freq: bool = False,
                  sparse: bool = False, _weight = None):
@@ -451,16 +451,16 @@ def  MSELoss():
 class BCEWithLogitsLoss():
     def __init__(self, weight=None, reduction='mean'):
         self.weight = weight
-        self.reduction = 'mean'
+        self.reduction = reduction
 
     def __call__(self, x, label):
         out =  fluid.layers.sigmoid_cross_entropy_with_logits(x, label)
         if self.reduction == 'sum':
-            return fluid.layers.reduce_sum(out)
+            return Tensor(fluid.layers.reduce_sum(out))
         elif self.reduction == 'mean':
-            return fluid.layers.reduce_mean(out)
+            return Tensor(fluid.layers.reduce_mean(out))
         else:
-            return out
+            return Tensor(out)
 
 class Spectralnorm(Module):
     def __init__(self,
