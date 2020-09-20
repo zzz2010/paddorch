@@ -33,7 +33,11 @@ def softmax(input, dim=None, _stacklevel=3, dtype=None):
     return torch.Tensor(fluid.layers.softmax(input,axis=dim))
 
 def embedding(x, weight):
-    return torch.Tensor(fluid.layers.embedding(fluid.layers.reshape(x,[-1,1]), size=weight.shape,param_attr=NumpyArrayInitializer(weight.numpy())))
+    layer=fluid.dygraph.Embedding( size=weight.shape)
+    layer.weight.set_value(weight)
+    out=layer(x)
+    return out
+
 
 
 def batch_norm(x,  running_mean, running_var, weight=None, bias=None,
@@ -93,30 +97,29 @@ def conv2d(input, weight, bias=None, stride=1, padding=1,dilation=1, groups=1):
     if bias is None:
         bias_attr=False
     else:
-        bias_attr=NumpyArrayInitializer(bias.numpy())
-    return torch.Tensor(fluid.layers.conv2d(input , num_filters=weight.shape[0],filter_size=weight.shape[-2:],stride=stride,padding=padding,dilation=dilation,groups=groups,
-            param_attr=fluid.ParamAttr(initializer=NumpyArrayInitializer(weight.numpy())),bias_attr=bias_attr))
+        bias_attr=None
+
+    layer=fluid.dygraph.Conv2D(num_channels=weight.shape[1], num_filters=weight.shape[0],filter_size=weight.shape[-2:],stride=stride,padding=padding,dilation=dilation,groups=groups,bias_attr=bias_attr)
+    layer.weight.set_value(weight)
+    if bias is not None:
+        layer.bias.set_value(bias)
+    out=layer(input)
+    return out
+
 
 
 def conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1):
     if bias is None:
         bias_attr=False
     else:
-        bias_attr=fluid.ParamAttr(initializer=NumpyArrayInitializer(bias.numpy()))
-    return torch.Tensor(fluid.layers.conv2d_transpose(input,
-                     weight.shape[0],
-                     output_size=None,
-                     filter_size=weight.shape[1],
-                     padding=padding,
-                     stride=stride,
-                     dilation=dilation,
-                     groups=groups,
-                     param_attr=fluid.ParamAttr(initializer=NumpyArrayInitializer(weight.numpy())),
-                     bias_attr=bias_attr,
-                     use_cudnn=True,
-                     act=None,
-                     name=None,
-                     data_format='NCHW'))
+        bias_attr=None
+
+    layer=fluid.dygraph.Conv2DTranspose(num_channels=weight.shape[0], num_filters=weight.shape[1],filter_size=weight.shape[-2:],stride=stride,padding=padding,dilation=dilation,groups=groups,bias_attr=bias_attr)
+    layer.weight.set_value(weight)
+    if bias is not None:
+        layer.bias.set_value(bias)
+    out=layer(input)
+    return out
 
 
 # from torch.nn.functional import  l1_loss,mse_loss,binary_cross_entropy_with_logits
