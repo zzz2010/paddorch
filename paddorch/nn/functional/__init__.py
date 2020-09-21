@@ -34,7 +34,8 @@ def softmax(input, dim=None, _stacklevel=3, dtype=None):
 
 def embedding(x, weight):
     layer=fluid.dygraph.Embedding( size=weight.shape)
-    layer.weight.set_value(weight)
+    # layer.weight.set_value(weight)
+    fluid.layers.assign(weight,layer.weight)
     out=layer(x)
     return out
 
@@ -100,9 +101,11 @@ def conv2d(input, weight, bias=None, stride=1, padding=1,dilation=1, groups=1):
         bias_attr=None
 
     layer=fluid.dygraph.Conv2D(num_channels=weight.shape[1], num_filters=weight.shape[0],filter_size=weight.shape[-2:],stride=stride,padding=padding,dilation=dilation,groups=groups,bias_attr=bias_attr)
-    layer.weight.set_value(weight)
+    # layer.weight.set_value(weight)
+    fluid.layers.assign(weight,layer.weight)
     if bias is not None:
-        layer.bias.set_value(bias)
+        # layer.bias.set_value(bias)
+        fluid.layers.assign(bias, layer.bias)
     out=layer(input)
     return out
 
@@ -115,9 +118,11 @@ def conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_paddi
         bias_attr=None
 
     layer=fluid.dygraph.Conv2DTranspose(num_channels=weight.shape[0], num_filters=weight.shape[1],filter_size=weight.shape[-2:],stride=stride,padding=padding,dilation=dilation,groups=groups,bias_attr=bias_attr)
-    layer.weight.set_value(weight)
+    # layer.weight.set_value(weight)
+    fluid.layers.assign(weight,layer.weight)
     if bias is not None:
-        layer.bias.set_value(bias)
+        # layer.bias.set_value(bias)
+        fluid.layers.assign(bias, layer.bias)
     out=layer(input)
     return out
 
