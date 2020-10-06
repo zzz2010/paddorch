@@ -20,7 +20,13 @@ def normal_(x,m=0,std=1):
 
 def kaiming_normal_(x,nonlinearity=None):
     ##didnt know how to implement correctly, use normal as  placeholder
-    return normal_(x)
+    x= normal_(x)
+    if nonlinearity is not None:
+        if nonlinearity =="relu":
+            x=paddorch.nn.functional.relu(x)
+        if nonlinearity =="tanh":
+            x=paddorch.nn.functional.tanh(x)
+    return x
 
 def constant_(x,val):
     y=fluid.layers.zeros(x.shape,"float32")+val
