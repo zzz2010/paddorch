@@ -18,4 +18,11 @@ def normal_(x,m=0,std=1):
     # fluid.layers.assign(np.random.randn(*x.shape).astype(np.float32)*std+m,x)
     return x
 
+def kaiming_normal_(x,nonlinearity=None):
+    ##didnt know how to implement correctly, use normal as  placeholder
+    return normal_(x)
 
+def constant_(x,val):
+    y=fluid.layers.zeros(x.shape,"float32")+val
+    fluid.layers.assign(y, x)
+    return x

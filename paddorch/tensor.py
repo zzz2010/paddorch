@@ -169,7 +169,14 @@ class Tensor(dygraph.core.VarBase):
         return varbase_to_tensor(x)
 
     def transpose(self,*perm):
-        return self.permute(perm)
+        if len(perm)==2 and len(self.shape)>2:
+            ###only swap two axis
+            perm2=list(range(len(self.shape)))
+            a=perm2[perm[0]]
+            perm2[perm[0]]=perm[1]
+            perm2[perm[1]] =a
+            perm=perm2
+        return self.permute(*perm)
 
     def cpu(self,*args, **kwargs):
         return self
@@ -213,7 +220,11 @@ class Tensor(dygraph.core.VarBase):
 
     def t(self):
         return Tensor(fluid.layers.transpose(self,np.arange(len(self.shape))[::-1]))
-    
+    def reshape(self,*size):
+        if len(size)==1:
+            size=size[0]
+        return self.view(*size)
+
     def __getitem__(self,args):
         from typing import   Iterable
         if not isinstance(args,Iterable):

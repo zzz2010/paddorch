@@ -346,6 +346,10 @@ def load(file_path,map_location=None) :
 
     return out_dict
 
-
+def sigmoid(x):
+    return Tensor(fluid.layers.sigmoid(x))
 def tanh(x):
-    return fluid.layers.tanh(x)
+    return Tensor(fluid.layers.tanh(x))
+
+def transpose(x,*perm):
+    return x.transpose(*perm)
