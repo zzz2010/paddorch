@@ -44,9 +44,17 @@ def squeeze(x,axes=[-1]):
 def split(x,batch_size,dim=0):
 
     if not isinstance(batch_size,int):
-        batch_size=len(batch_size)
-    last_index=x.shape[0]//batch_size*batch_size
-    Y= fluid.layers.split(x[:last_index],batch_size,dim=dim)
+        Y=[]
+        st=0
+        for bs in batch_size: #list of split size
+            ed=st+bs
+            Y.append(x[st:ed])
+            st=ed
+
+    else:
+        n_splits = x.shape[0] // batch_size
+        last_index=n_splits*batch_size
+        Y= fluid.layers.split(x[:last_index],n_splits,dim=dim)
     # if last_index != x.shape[0]: ##handle not equal divide case
     #     Y.append(x[last_index:])
     return Y
