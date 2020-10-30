@@ -195,6 +195,18 @@ class Embedding(dygraph.Embedding,Module):
                  padding_idx=padding_idx,
                  param_attr=None,
                  dtype='float32')
+        self.norm_type=norm_type
+        self.max_norm=max_norm
+
+
+    def forward(self, input):
+        if self.max_norm is not None:
+            max_norm=paddorch.norm(self.weight, p=self.norm_type, keepdim=True)
+            max_norm=paddorch.clamp(max_norm,0,self.max_norm)
+            normalized_weight=self.weight / max_norm
+            paddorch.copy(normalized_weight,self.weight )
+        y=super(Embedding, self).forward(input)
+        return y
 
 def Dropout(p=0.5, inplace=False):
     return dygraph.Dropout(p,dropout_implementation='upscale_in_train')
