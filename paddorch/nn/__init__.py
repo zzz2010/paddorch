@@ -95,7 +95,7 @@ class Conv2d(dygraph.Conv2D,Module):
         if not bias:
             bias_attr = False
         else:
-            bias_attr = fluid.initializer.ConstantInitializer(value=0)
+            bias_attr =fluid.initializer.MSRAInitializer() # fluid.initializer.ConstantInitializer(value=0)
 
         super(Conv2d, self).__init__(num_channels=in_channels,
                                      num_filters=out_channels,
@@ -181,7 +181,7 @@ class Linear(dygraph.Linear,Module):
         if not bias:
             bias_attr = False
         else:
-            bias_attr = fluid.initializer.ConstantInitializer(value=0)
+            bias_attr =fluid.initializer.MSRAInitializer() # fluid.initializer.ConstantInitializer(value=0)
         super(Linear, self).__init__(in_features, out_features, param_attr=fluid.initializer.MSRAInitializer(), bias_attr=bias_attr, act=None, dtype="float32")
 
 
