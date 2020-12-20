@@ -165,7 +165,8 @@ class Tensor(dygraph.core.VarBase):
         return varbase_to_tensor(self*x)
 
     def permute(self,*perm):
-        x= fluid.layers.transpose(self, perm, name=None)
+        x=paddle.transpose(self,*perm)
+
         return varbase_to_tensor(x)
 
     def transpose(self,*perm):
