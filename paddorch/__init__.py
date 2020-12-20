@@ -260,7 +260,7 @@ def zeros_like(x, out=None,device=None):
     return varbase_to_tensor(fluid.layers.zeros_like(x,out))
 
 def randn(*shape, requires_grad=True):
-    X= varbase_to_tensor(fluid.layers.randn(shape))
+    X= varbase_to_tensor(paddle.randn(*shape))
     if not requires_grad:
         X.stop_gradient=True
     return X

@@ -8,6 +8,7 @@ from .parameter import Parameter
 from paddle.fluid import core
 from paddle.fluid.data_feeder import convert_dtype, check_variable_and_dtype, check_type, check_dtype
 import paddorch.nn.utils
+import paddle
 from . import init
 from ..tensor import Tensor
 
@@ -183,6 +184,91 @@ class Linear(dygraph.Linear,Module):
         else:
             bias_attr =fluid.initializer.MSRAInitializer() # fluid.initializer.ConstantInitializer(value=0)
         super(Linear, self).__init__(in_features, out_features, param_attr=fluid.initializer.MSRAInitializer(), bias_attr=bias_attr, act=None, dtype="float32")
+
+
+
+
+
+class LSTM(paddle.nn.LSTM,Module):
+    '''    Args:
+        input_size: The number of expected features in the input `x`
+        hidden_size: The number of features in the hidden state `h`
+        num_layers: Number of recurrent layers. E.g., setting ``num_layers=2``
+            would mean stacking two LSTMs together to form a `stacked LSTM`,
+            with the second LSTM taking in outputs of the first LSTM and
+            computing the final results. Default: 1
+        bias: If ``False``, then the layer does not use bias weights `b_ih` and `b_hh`.
+            Default: ``True``
+        batch_first: If ``True``, then the input and output tensors are provided
+            as (batch, seq, feature). Default: ``False``
+        dropout: If non-zero, introduces a `Dropout` layer on the outputs of each
+            LSTM layer except the last layer, with dropout probability equal to
+            :attr:`dropout`. Default: 0
+        bidirectional: If ``True``, becomes a bidirectional LSTM. Default: ``False``'''
+
+    def __init__(self,input_size,hidden_size,num_layers=1,bias=True,batch_first=False,dropout=0,bidirectional=False):
+        bias_attr = None
+        if not bias:
+            bias_attr = False
+        else:
+            bias_attr =fluid.initializer.MSRAInitializer()
+        if not bidirectional:
+            direction="forward"
+        else:
+            direction="bidirectional"
+        super(LSTM,self).__init__ ( input_size,
+                 hidden_size,
+                 num_layers=num_layers,
+                 direction=direction,
+                 time_major=not batch_first,
+                 dropout=dropout,
+                 weight_ih_attr=None,
+                 weight_hh_attr=None,
+                 bias_ih_attr=bias_attr,
+                 bias_hh_attr=bias_attr,
+                 name=None)
+
+class GRU(paddle.nn.GRU,Module):
+
+    '''    Args:
+        input_size: The number of expected features in the input `x`
+        hidden_size: The number of features in the hidden state `h`
+        num_layers: Number of recurrent layers. E.g., setting ``num_layers=2``
+            would mean stacking two GRUs together to form a `stacked GRU`,
+            with the second GRU taking in outputs of the first GRU and
+            computing the final results. Default: 1
+        bias: If ``False``, then the layer does not use bias weights `b_ih` and `b_hh`.
+            Default: ``True``
+        batch_first: If ``True``, then the input and output tensors are provided
+            as (batch, seq, feature). Default: ``False``
+        dropout: If non-zero, introduces a `Dropout` layer on the outputs of each
+            GRU layer except the last layer, with dropout probability equal to
+            :attr:`dropout`. Default: 0
+        bidirectional: If ``True``, becomes a bidirectional GRU. Default: ``False``'''
+    def __init__(self,input_size,hidden_size,num_layers=1,bias=True,batch_first=False,dropout=0,bidirectional=False):
+        bias_attr = None
+        if not bias:
+            bias_attr = False
+        else:
+            bias_attr =fluid.initializer.MSRAInitializer()
+        if not bidirectional:
+            direction="forward"
+        else:
+            direction="bidirectional"
+        super(GRU,self).__init__(  input_size,
+                 hidden_size,
+                 num_layers=num_layers,
+                 direction=direction,
+                 time_major=not batch_first,
+                 dropout=dropout,
+                 weight_ih_attr=None,
+                 weight_hh_attr=None,
+                 bias_ih_attr=bias_attr,
+                 bias_hh_attr=bias_attr,
+                 name=None)
+
+
+
 
 
 class Embedding(dygraph.Embedding,Module):
