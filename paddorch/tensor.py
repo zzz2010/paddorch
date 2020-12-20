@@ -165,7 +165,7 @@ class Tensor(dygraph.core.VarBase):
         return varbase_to_tensor(self*x)
 
     def permute(self,*perm):
-        x=paddle.transpose(self,*perm)
+        x=paddle.transpose(self,perm)
 
         return varbase_to_tensor(x)
 
