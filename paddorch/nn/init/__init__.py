@@ -13,7 +13,7 @@ def constant_(x, val):
     return x
 
 def normal_(x,m=0,std=1):
-    y=fluid.layers.randn(x.shape)*std+m
+    y=paddle.randn(x.shape)*std+m
     fluid.layers.assign(y, x)
     # fluid.layers.assign(np.random.randn(*x.shape).astype(np.float32)*std+m,x)
     return x
