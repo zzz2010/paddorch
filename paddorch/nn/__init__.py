@@ -527,6 +527,30 @@ def Sequential(*layers):
     return dygraph.Sequential(*layers)
 
 
+class ConstantPad2d(Module):
+    def __init__(self, padding, value):
+        super().__init__()
+        self.value = value
+        if isinstance(padding, int):
+            self.padding = [padding] * 4
+        else:
+            self.padding = padding
+
+    def forward(self, x):
+        return fluid.layers.pad2d(x, self.padding, pad_value=self.value, mode='constant')
+
+
+class ReplicationPad2d(Module):
+    def __init__(self, padding):
+        super().__init__()
+        if isinstance(padding, int):
+            self.padding = [padding] * 4
+        else:
+            self.padding = padding
+
+    def forward(self, x):
+        return fluid.layers.pad2d(x, self.padding, mode='edge')
+
 
 class ReflectionPad2d(Module):
     def __init__(self, padding):
