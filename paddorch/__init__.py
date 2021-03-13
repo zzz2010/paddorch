@@ -14,32 +14,33 @@ from . import  vision
 double="float32"
 
 def chunk(self , chunks , dim ):
-    slices= fluid.layers.unstack(self, axis=dim, num=None)
+    slices= paddle.unstack(self, axis=dim, num=None)
     out_list=[]
     step=int(np.ceil(len(slices)/chunks))
     for st in range(0,len(slices),step):
-        out_list.append(varbase_to_tensor(fluid.layers.concat( [paddle.fluid.layers.unsqueeze(x, dim, name=None) for x in slices[st:(st+step)] ], axis=dim, name=None)))
+        out_list.append(varbase_to_tensor(fluid.layers.concat( [paddle.unsqueeze(x, dim, name=None) for x in slices[st:(st+step)] ], axis=dim, name=None)))
     return out_list
 
 def trace(x, offset=0, dim1=0, dim2=1, out=None):
-    return Tensor(fluid.layers.trace(x,offset,dim1,dim2,out))
+    return Tensor(paddle.trace(x,offset,dim1,dim2,out))
 
 
 def bmm(x,y):
-    return Tensor(fluid.layers.bmm(x,y))
+
+    return Tensor(paddle.bmm(x,y))
 def eye(n , m ):
-    return Tensor(fluid.layers.eye(n,m))
+    return Tensor(paddle.eye(n,m))
 
 def dot(x,y):
-    return Tensor(fluid.layers.dot(x,y))
+    return Tensor(paddle.dot(x,y))
 def mm(x,y):
     return matmul(x,y)
 
 def narrow(x, dim, start, length):
-    return  fluid.layers.slice(x,[dim],[start],[start+length] )
+    return  paddle.slice(x,[dim],[start],[start+length] )
 
 def squeeze(x,axes=[-1]):
-    return Tensor(fluid.layers.squeeze(x,axes))
+    return Tensor(paddle.squeeze(x,axes))
 
 def split(x,batch_size,dim=0):
 
@@ -54,7 +55,7 @@ def split(x,batch_size,dim=0):
     else:
         n_splits = x.shape[0] // batch_size
         last_index=n_splits*batch_size
-        Y= fluid.layers.split(x[:last_index],n_splits,dim=dim)
+        Y= paddle.split(x[:last_index],n_splits,dim=dim)
     # if last_index != x.shape[0]: ##handle not equal divide case
     #     Y.append(x[last_index:])
     return Y
@@ -63,7 +64,7 @@ def empty(*size):
     return zeros(*size)
 
 def matmul(x,y):
-    return Tensor(fluid.layers.matmul(x,y ))
+    return Tensor(paddle.matmul(x,y ))
 def tensor(x,dtype=np.float32):
     if isinstance(x,list):
         x=np.array(x,dtype=dtype)
@@ -77,7 +78,7 @@ def FloatTensor(x):
     return tensor(x)
 
 def abs(x):
-    return fluid.layers.abs(x)
+    return paddle.abs(x)
 def max(x,dim=None,keepdim=False):
     return varbase_to_tensor(fluid.layers.reduce_max(x,dim,keep_dim= keepdim ))
 
@@ -107,7 +108,7 @@ def where(condition, x=None, y=None):
         # return stack(out)
 
 def flip(self, dim):
-    return Tensor(fluid.layers.flip(self,dims=[dim]))
+    return Tensor(paddle.flip(self,dims=[dim]))
 
 def take(x,indices):
     if len(indices[0])==2:
@@ -120,7 +121,7 @@ def linspace(start, stop, num, dtype="float32"):
 
 def randint(low, high, size ,
            dtype="int64", requires_grad=False):
-    return Tensor(fluid.layers.randint(low,
+    return Tensor(paddle.randint(low,
             high=high,
             shape=size,
             out=None,
@@ -131,18 +132,18 @@ def randint(low, high, size ,
 def copy(src,target):
     # target.set_value(src)
     # return target
-    fluid.layers.assign(src,target)
+    paddle.assign(src,target)
 
 def rsqrt(x):
-    return varbase_to_tensor(paddle.fluid.layers.rsqrt(x, name=None))
+    return varbase_to_tensor(paddle.rsqrt(x, name=None))
 
 def sum(x,dim=None, keepdim=False):
     return varbase_to_tensor(fluid.layers.reduce_sum(x,dim,keepdim))
 
 def sqrt(x):
-    return varbase_to_tensor(fluid.layers.sqrt(x))
+    return varbase_to_tensor(paddle.sqrt(x))
 def pow(x,y):
-    return varbase_to_tensor(fluid.layers.pow(x,y))
+    return varbase_to_tensor(paddle.pow(x,y))
 
 def as_tensor(x,dtype=np.float32):
     return tensor(x,dtype)
@@ -161,7 +162,7 @@ def multinomial(weights , num_samples , replacement=False):
         raise(Exception("num_samples should be no greater than the weights length"))
 
     while len(select_samples)<num_samples:
-        x=fluid.layers.sampling_id(fluid.layers.reshape(weights,[1,-1] ))
+        x=fluid.layers.sampling_id(paddle.reshape(weights,[1,-1] ))
         if not replacement:
             if x in select_samples:
                 continue
@@ -175,17 +176,17 @@ def LongTensor(x):
     return Tensor(x )
 
 def stack(inputs,dim=0,out=None):
-    x= fluid.layers.stack(inputs ,axis=dim )
+    x= paddle.stack(inputs ,axis=dim )
     if out is None:
         return varbase_to_tensor(x)
     else:
-        fluid.layers.assign(x,out)
+        paddle.assign(x,out)
         return out
 def arange(*args,**kwargs):
     return Tensor(np.arange(*args,**kwargs).astype("int32"))
     # if end==0:
     #     return []
-    # return varbase_to_tensor(paddle.fluid.layers.range(0, end, step, dtype))
+    # return varbase_to_tensor(paddle.paddle.range(0, end, step, dtype))
 
 def device(name):
     if name.startswith("cuda"):
@@ -198,25 +199,25 @@ def device(name):
         return fluid.CPUPlace()
 
 def cat(tensors, dim=0, out=None):
-    x=fluid.layers.concat(tensors,axis=dim)
+    x=paddle.concat(tensors,axis=dim)
     if out is None:
         return varbase_to_tensor(x)
     else:
-        fluid.layers.assign(x,out)
+        paddle.assign(x,out)
         return out
 
 
 def ones(*size, out=None, dtype="float32",device=None):
-    return varbase_to_tensor(fluid.layers.ones(size,dtype))
+    return varbase_to_tensor(paddle.ones(size,dtype))
 
 def zeros(*size, out=None, dtype="float32",device=None,requires_grad=True):
-    X= varbase_to_tensor(fluid.layers.zeros(size,dtype))
+    X= varbase_to_tensor(paddle.zeros(size,dtype))
     if not requires_grad:
         X.stop_gradient=True
     return X
 
 def ones_like(x, out=None,device=None):
-    return varbase_to_tensor(fluid.layers.ones_like(x,out))
+    return varbase_to_tensor(paddle.ones_like(x,out))
 
 def cov(m, rowvar=False, inplace=False):
     '''Estimate a covariance matrix given data.
@@ -253,20 +254,20 @@ def cov(m, rowvar=False, inplace=False):
     m = paddorch.Tensor(m)
 
     mt = m.permute(1, 0)  # if complex: mt = m.t().conj()
-    return fact * fluid.layers.matmul(m, mt)
+    return fact * paddle.matmul(m, mt)
 
 
 def zeros_like(x, out=None,device=None):
-    return varbase_to_tensor(fluid.layers.zeros_like(x,out))
+    return varbase_to_tensor(paddle.zeros_like(x,out))
 
 def randn(*shape, requires_grad=True):
-    X= varbase_to_tensor(fluid.layers.randn(shape))
+    X= varbase_to_tensor(paddle.randn(*shape))
     if not requires_grad:
         X.stop_gradient=True
     return X
 
 def mean(input):
-    return  fluid.layers.mean(input)
+    return  paddle.mean(input)
 
 def var(input, dim=None, keepdim=False, unbiased=True, name=None):
     if isinstance(dim,tuple):
@@ -291,7 +292,7 @@ def mean(input, dim=None, keepdim=False, out=None):
     if out is None:
         return varbase_to_tensor(x)
     else:
-        fluid.layers.assign(x,out)
+        paddle.assign(x,out)
         return out
 
 def lerp(input, end, weight, out=None):
@@ -299,15 +300,15 @@ def lerp(input, end, weight, out=None):
     if out is None:
         return x
     else:
-        fluid.layers.assign(x,out)
+        paddle.assign(x,out)
         return out
 
 def flatten(x,dim=1):
-    x=fluid.layers.flatten(x ,axis=dim)
+    x=paddle.flatten(x ,axis=dim)
     return varbase_to_tensor(x)
 
 def clamp(input, min, max, out=None) :
-    return varbase_to_tensor(fluid.layers.clip(input, min, max))
+    return varbase_to_tensor(paddle.clip(input, min, max))
 
 def  no_grad(func=None):
     return fluid.dygraph.no_grad(func)
