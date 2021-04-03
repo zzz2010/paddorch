@@ -23,7 +23,8 @@ def new_full(size, fill_value, dtype=None,  requires_grad=False):
     return x
 
 
-class Tensor(dygraph.core.VarBase):
+# class Tensor(dygraph.core.VarBase):
+class Tensor(paddle.Tensor):
     def __init__(self,*args, **kwargs):
 
         if isinstance(args[0],dygraph.core.VarBase) or isinstance(args[0],dygraph.core.LoDTensor):
@@ -187,6 +188,11 @@ class Tensor(dygraph.core.VarBase):
 
     def to(self,*args, **kwargs):
         return self
+
+
+    def type(self,dtype):
+        return self.astype(dtype)
+
     def contiguous(self):
         return self
 
@@ -228,16 +234,8 @@ class Tensor(dygraph.core.VarBase):
 
     def __getitem__(self,args):
         from typing import   Iterable
-        if not isinstance(args,Iterable):
-            return Tensor(super(Tensor, self).__getitem__(args))
-        if isinstance(args[0],dygraph.core.VarBase):
-            if isinstance(args,tuple):
-                if len(args)==2:
-                    return torch.take(self, list(zip(args[0].numpy().astype(int).tolist(), args[1].numpy().astype(int).tolist())))
-                else:
-                    raise("not support more than 2 axis array indexing")
-            else:
-                return torch.take(self,
-                                  args[0].numpy().astype(int).tolist())
+        if  isinstance(args,paddle.Tensor):
+            if args.dtype==paddle.fluid.core.VarDesc.VarType.BOOL:
+                return Tensor(paddle.masked_select(self,args))
 
         return Tensor(super(Tensor, self).__getitem__(args))

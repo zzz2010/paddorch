@@ -2,6 +2,7 @@ import paddle.fluid as fluid
 import paddle
 from . import cuda
 from . import  nn
+from . import sparse
 import os
 import paddorch.nn.functional
 import paddorch.nn.init
@@ -24,7 +25,8 @@ def chunk(self , chunks , dim ):
 def trace(x, offset=0, dim1=0, dim2=1, out=None):
     return Tensor(paddle.trace(x,offset,dim1,dim2,out))
 
-
+def from_numpy(x):
+    return Tensor(x)
 def bmm(x,y):
 
     return Tensor(paddle.bmm(x,y))
@@ -128,6 +130,15 @@ def randint(low, high, size ,
             dtype=dtype,
             device=None,
             stop_gradient=not requires_grad))
+
+def rand(shape):
+    if isinstance(shape,int):
+        shape=[shape]
+    return Tensor(paddle.rand(shape))
+
+
+def floor(x):
+    return Tensor(paddle.floor(x))
 
 def copy(src,target):
     # target.set_value(src)

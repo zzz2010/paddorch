@@ -5,13 +5,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="paddorch", # Replace with your own username
-    version="0.0.2",
+    version="0.0.3",
     author="Zhizhuo Zhang",
     author_email="zzz2010@gmail.com",
     description="paddle implementation for pytorch interface",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/zzz2010/paddle_torch",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
