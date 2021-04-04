@@ -12,7 +12,7 @@ from paddle.fluid import dygraph
 import numpy as np
 
 def varbase_to_tensor(x):
-    return Tensor(x)
+    return convertTensor(x)
 
 
 def new_full(size, fill_value, dtype=None,  requires_grad=False):
@@ -22,6 +22,10 @@ def new_full(size, fill_value, dtype=None,  requires_grad=False):
     x.stop_gradient=not requires_grad
     return x
 
+def convertTensor(x):
+    if isinstance(x,paddorch.Tensor):
+        return x
+    return  paddorch.Tensor(x)
 
 # class Tensor(dygraph.core.VarBase):
 class Tensor(paddle.Tensor):
@@ -134,7 +138,7 @@ class Tensor(paddle.Tensor):
         return self
 
     def float(self):
-        return Tensor(self.astype('float32'))
+        return convertTensor(self.astype('float32'))
 
     def dot(self,x):
         return torch.dot(self,x)
@@ -210,24 +214,24 @@ class Tensor(paddle.Tensor):
 
 
     def add(self,x):
-        return Tensor(self+x)
+        return convertTensor(self+x)
 
     def __add__(self, other):
-        return Tensor(super(Tensor, self).__add__(other) )
+        return convertTensor(super(Tensor, self).__add__(other) )
     def __sub__(self, other):
-        return Tensor( super(Tensor, self).__sub__(other))
+        return convertTensor( super(Tensor, self).__sub__(other))
 
     def __div__(self, other_var):
-        return Tensor(super(Tensor, self).__div__(other_var))
+        return convertTensor(super(Tensor, self).__div__(other_var))
 
     def __mul__(self, other_var):
-        return Tensor(super(Tensor, self).__mul__(other_var))
+        return convertTensor(super(Tensor, self).__mul__(other_var))
 
     def item(self):
         return self.numpy().flatten()[0]
 
     def t(self):
-        return Tensor(fluid.layers.transpose(self,np.arange(len(self.shape))[::-1]))
+        return convertTensor(fluid.layers.transpose(self,np.arange(len(self.shape))[::-1]))
     def reshape(self,*size):
         if len(size)==1:
             size=size[0]
@@ -237,15 +241,15 @@ class Tensor(paddle.Tensor):
         from typing import   Iterable
         if  isinstance(args,paddle.Tensor):
             if args.dtype==paddle.fluid.core.VarDesc.VarType.BOOL:
-                return Tensor(paddle.masked_select(self,args))
+                return convertTensor(paddle.masked_select(self,args))
             elif args.dtype==paddle.fluid.core.VarDesc.VarType.INT32 or args.dtype==paddle.fluid.core.VarDesc.VarType.INT64:
-                return Tensor(paddle.index_select(self,args,axis=0))
+                return convertTensor(paddle.index_select(self,args,axis=0))
         if isinstance(args,Iterable) and (len(args)==2):
             if isinstance(args[1],paddle.Tensor) and (args[1].dtype==paddle.fluid.core.VarDesc.VarType.BOOL):
-                sel_indices=paddorch.arange(len(args[1]))[args[1]]
-                return Tensor(paddle.index_select(self[args[0]],sel_indices,axis=1))
+                sel_indices=paddle.masked_select(paddle.arange(len(args[1])),args[1])  #paddle.arange(len(args[1]))[args[1]]
+                return convertTensor(paddle.index_select(self[args[0]],sel_indices,axis=1))
             elif isinstance(args[0],paddle.Tensor):
-                    return Tensor(super(Tensor, self).__getitem__(args[0])[args[1]])
+                    return convertTensor(super(Tensor, self).__getitem__(args[0])[args[1]])
 
 
-        return Tensor(super(Tensor, self).__getitem__(args))
+        return convertTensor(super(Tensor, self).__getitem__(args))

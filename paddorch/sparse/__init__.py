@@ -42,7 +42,7 @@ def mm_slow(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase):
         ret_Mat[row]+=denseY[col]*sparseX.values[i]
     return ret_Mat
 
-def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,max_query_size=2000000):
+def mm_smallmem(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,max_query_size=2000000):
     batch_size = sparseX._nnz()
      #avoid memory explode
     if batch_size>max_query_size:
@@ -51,13 +51,15 @@ def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,max_query_si
     ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
     for batch_i in range(sparseX._nnz()//batch_size):
         updates=paddle.index_select(denseY, sparseX.indices[1][(batch_i*batch_size):( (batch_i+1)*batch_size) ],axis=0)*sparseX.values[(batch_i*batch_size):( (batch_i+1)*batch_size) ].view(-1,1)
-        ret_Mat=paddle.scatter(ret_Mat,sparseX.indices[0][(batch_i*batch_size):( (batch_i+1)*batch_size) ],updates,overwrite=False)
+        ret_Mat=paddle.scatter_(ret_Mat,sparseX.indices[0][(batch_i*batch_size):( (batch_i+1)*batch_size) ],updates,overwrite=False)
     return ret_Mat
 
 
-# def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,batch_size=500):
-#     ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
-#
-#     updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*sparseX.values .view(-1,1)
-#     ret_Mat=paddle.scatter_(ret_Mat,sparseX.indices[0] ,updates,overwrite=False)
-#     return ret_Mat
+def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
+    ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
+    ret_Mat.stop_gradient=True
+
+    updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*sparseX.values .view(-1,1)
+    ret_Mat2=paddle.scatter_(ret_Mat,sparseX.indices[0] ,updates,overwrite=False)
+    del ret_Mat
+    return ret_Mat2

@@ -10,7 +10,7 @@ from paddle.fluid.data_feeder import convert_dtype, check_variable_and_dtype, ch
 import paddorch.nn.utils
 import paddle
 from . import init
-from ..tensor import Tensor
+from ..tensor import Tensor,convertTensor
 from paddle.nn import LogSigmoid
 
 
@@ -23,19 +23,19 @@ def clone_layer(layer):
 
 def forward_post_hook(layer,input,output):
     if isinstance(output,tuple):
-        return tuple([Tensor(x) if isinstance(x,dygraph.core.VarBase) else x for x in output])
+        return tuple([convertTensor(x) if isinstance(x,dygraph.core.VarBase) else x for x in output])
     else:
         if isinstance(output,dygraph.core.VarBase) and not isinstance(output,Tensor):
-            return Tensor(output)
+            return convertTensor(output)
         else:
             return output
 
 def forward_pre_hook(layer,input):
     if isinstance(input,tuple):
-        return tuple([Tensor(x) if isinstance(x,dygraph.core.VarBase) else x for x in input])
+        return tuple([convertTensor(x) if isinstance(x,dygraph.core.VarBase) else x for x in input])
     else:
         if isinstance(input,dygraph.core.VarBase) and not isinstance(input,Tensor):
-            return Tensor(input)
+            return convertTensor(input)
         else:
             return input
 
@@ -578,11 +578,11 @@ class BCEWithLogitsLoss():
     def __call__(self, x, label):
         out =  fluid.layers.sigmoid_cross_entropy_with_logits(x, label)
         if self.reduction == 'sum':
-            return Tensor(fluid.layers.reduce_sum(out))
+            return convertTensor(fluid.layers.reduce_sum(out))
         elif self.reduction == 'mean':
-            return Tensor(fluid.layers.reduce_mean(out))
+            return convertTensor(fluid.layers.reduce_mean(out))
         else:
-            return Tensor(out)
+            return convertTensor(out)
 
 class Spectralnorm(Module):
     def __init__(self,

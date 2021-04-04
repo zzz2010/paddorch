@@ -1,7 +1,7 @@
 
 
 import torch
-N_dim=1300
+N_dim=130000
 torch.manual_seed(0)
 a = torch.randn(2, N_dim).to_sparse().requires_grad_(False)
 a_dense=a.to_dense().numpy()
@@ -21,8 +21,13 @@ tid2=paddorch.Tensor(dd)
 print("test",tid2)
 a=paddorch.sparse.FloatTensor(paddorch.LongTensor(a._indices().detach().numpy()),paddorch.FloatTensor(a._values().detach().numpy()),(2, N_dim))
 b=paddorch.from_numpy(b.detach().numpy())
+import time
+before=time.time()
+for _ in range(10000):
+    y = paddorch.sparse.mm(a, b)
 
-y = paddorch.sparse.mm(a, b)
+after=time.time()
+print("time:",after-before)
 print(y)
 
 

@@ -8,11 +8,12 @@ import paddorch.nn.functional
 import paddorch.nn.init
 from paddle.fluid import dygraph
 import numpy as np
-from paddorch.tensor import varbase_to_tensor,Tensor
+from paddorch.tensor import varbase_to_tensor,Tensor,convertTensor
 from . import optim
 from . import  vision
 
 double="float32"
+bool="bool"
 
 def chunk(self , chunks , dim ):
     slices= paddle.unstack(self, axis=dim, num=None)
@@ -371,9 +372,9 @@ def load(file_path,map_location=None) :
     return out_dict
 
 def sigmoid(x):
-    return Tensor(fluid.layers.sigmoid(x))
+    return convertTensor(fluid.layers.sigmoid(x))
 def tanh(x):
-    return Tensor(fluid.layers.tanh(x))
+    return convertTensor(fluid.layers.tanh(x))
 
 def transpose(x,*perm):
     return x.transpose(*perm)
