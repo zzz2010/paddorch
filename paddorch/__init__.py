@@ -184,7 +184,7 @@ def LongTensor(x):
         return Tensor(fluid.Tensor)
     if isinstance(x,list):
         x=np.array(x,dtype=np.int32)
-    return Tensor(x )
+    return Tensor(x ).astype("int32")
 
 def stack(inputs,dim=0,out=None):
     x= paddle.stack(inputs ,axis=dim )
@@ -229,6 +229,10 @@ def zeros(*size, out=None, dtype="float32",device=None,requires_grad=True):
 
 def ones_like(x, out=None,device=None):
     return varbase_to_tensor(paddle.ones_like(x,out))
+
+
+def mul(x,y):
+    return paddle.multiply(x,y)
 
 def cov(m, rowvar=False, inplace=False):
     '''Estimate a covariance matrix given data.

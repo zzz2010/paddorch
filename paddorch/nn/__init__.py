@@ -11,7 +11,7 @@ import paddorch.nn.utils
 import paddle
 from . import init
 from ..tensor import Tensor
-
+from paddle.nn import LogSigmoid
 
 
 def clone_layer(layer):

@@ -32,6 +32,7 @@ class Tensor(paddle.Tensor):
             super(Tensor, self).__init__( args[0].dtype,args[0].shape,args[0].name,dygraph.core.VarDesc.VarType.LOD_TENSOR, True)
 
             fluid.layers.assign(args[0],self)
+
         else:
             super(Tensor, self).__init__(*args, **kwargs)
             # self=self #dygraph.core.VarBase(*args, **kwargs)
@@ -133,7 +134,7 @@ class Tensor(paddle.Tensor):
         return self
 
     def float(self):
-        return self.astype('float32')
+        return Tensor(self.astype('float32'))
 
     def dot(self,x):
         return torch.dot(self,x)
@@ -237,5 +238,14 @@ class Tensor(paddle.Tensor):
         if  isinstance(args,paddle.Tensor):
             if args.dtype==paddle.fluid.core.VarDesc.VarType.BOOL:
                 return Tensor(paddle.masked_select(self,args))
+            elif args.dtype==paddle.fluid.core.VarDesc.VarType.INT32 or args.dtype==paddle.fluid.core.VarDesc.VarType.INT64:
+                return Tensor(paddle.index_select(self,args,axis=0))
+        if isinstance(args,Iterable) and (len(args)==2):
+            if isinstance(args[1],paddle.Tensor) and (args[1].dtype==paddle.fluid.core.VarDesc.VarType.BOOL):
+                sel_indices=paddorch.arange(len(args[1]))[args[1]]
+                return Tensor(paddle.index_select(self[args[0]],sel_indices,axis=1))
+            elif isinstance(args[0],paddle.Tensor):
+                    return Tensor(super(Tensor, self).__getitem__(args[0])[args[1]])
+
 
         return Tensor(super(Tensor, self).__getitem__(args))
