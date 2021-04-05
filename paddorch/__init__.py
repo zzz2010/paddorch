@@ -92,8 +92,9 @@ def full_like(x,fill_value):
     return Tensor.new_full(x,x.shape,fill_value)
 
 def norm(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
-    from . import linalg
-    return Tensor(linalg.norm(input, p=p, axis=dim, keepdim=keepdim,   name=None))
+    return convertTensor(paddle.norm(input,p=p,axis=dim,keepdim=keepdim))
+    # from . import linalg
+    # return Tensor(linalg.norm(input, p=p, axis=dim, keepdim=keepdim,   name=None))
 
 
 def where(condition, x=None, y=None):
@@ -169,6 +170,14 @@ def manual_seed(seed):
     np.random.seed(seed)
     paddle.seed(seed)
 
+def topk(input, k, dim=None, largest=True, sorted=True,  out=None)  :
+    vals, inds=paddle.topk(input,k,axis=dim,largest=largest,sorted=sorted)
+    return vals,inds
+
+
+
+def Size(size):
+    return size
 def multinomial(weights , num_samples , replacement=False):
     select_samples=[]
     if not replacement and num_samples>len(weights):

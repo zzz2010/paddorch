@@ -1,6 +1,7 @@
 import paddle.fluid as fluid
 from paddle.fluid.initializer import NumpyArrayInitializer
 import paddorch as torch
+from paddle.nn.functional import softplus
 
 def avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
     if stride is None:

@@ -1,7 +1,7 @@
 import paddle
 import paddorch
 
-class FloatTensor(object):
+class Tensor(object):
     def __init__(self,indices,values,size):
         self.values=values
         self.indices=indices
@@ -33,6 +33,18 @@ class FloatTensor(object):
         self.values.set_value(self.values/other_var)
         return  self
 
+
+    def coalesce(self):
+        #merge the same index
+        return  self #TODO
+
+class FloatTensor(Tensor):
+    def __init__(self,indices,values,size):
+        super(FloatTensor, self).__init__(indices,values,size)
+
+class IntTensor(Tensor):
+    def __init__(self,indices,values,size):
+        super(IntTensor, self).__init__(indices,values.astype("int32"),size)
 
 def mm_slow(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase):
     ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])

@@ -30,7 +30,6 @@ def convertTensor(x):
 # class Tensor(dygraph.core.VarBase):
 class Tensor(paddle.Tensor):
     def __init__(self,*args, **kwargs):
-
         if isinstance(args[0],dygraph.core.VarBase) or isinstance(args[0],dygraph.core.LoDTensor):
 
             super(Tensor, self).__init__( args[0].dtype,args[0].shape,args[0].name,dygraph.core.VarDesc.VarType.LOD_TENSOR, True)
@@ -139,6 +138,8 @@ class Tensor(paddle.Tensor):
 
     def float(self):
         return convertTensor(self.astype('float32'))
+    def long(self):
+        return convertTensor(self.astype('int64'))
 
     def dot(self,x):
         return torch.dot(self,x)
@@ -148,8 +149,8 @@ class Tensor(paddle.Tensor):
     def matmul(self,y):
         return torch.matmul(self,y)
 
-    def norm(self,dim=-1, keepdim=True):
-        return torch.norm(self,dim=dim,keepdim=keepdim)
+    def norm(self,p=2,dim=-1, keepdim=True):
+        return torch.norm(self,p=2,dim=dim,keepdim=keepdim)
 
     def expand(self,*sizes):
         ##handle -1 case
@@ -239,6 +240,8 @@ class Tensor(paddle.Tensor):
 
     def __getitem__(self,args):
         from typing import   Iterable
+        if isinstance(args, np.ndarray):
+            args=paddorch.from_numpy(args)
         if  isinstance(args,paddle.Tensor):
             if args.dtype==paddle.fluid.core.VarDesc.VarType.BOOL:
                 return convertTensor(paddle.masked_select(self,args))
