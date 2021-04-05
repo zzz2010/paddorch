@@ -167,6 +167,7 @@ def is_tensor(x):
 def manual_seed(seed):
     fluid.Program.random_seed=seed
     np.random.seed(seed)
+    paddle.seed(seed)
 
 def multinomial(weights , num_samples , replacement=False):
     select_samples=[]
