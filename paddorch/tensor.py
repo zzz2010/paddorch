@@ -18,7 +18,8 @@ def varbase_to_tensor(x):
 def new_full(size, fill_value, dtype=None,  requires_grad=False):
     if dtype is None:
         dtype='float32'
-    x=Tensor(np.full(size,fill_value,dtype=dtype))
+
+    x=convertTensor(paddle.full(size,fill_value,dtype=dtype))
     x.stop_gradient=not requires_grad
     return x
 
@@ -139,7 +140,7 @@ class Tensor(paddle.Tensor):
     def float(self):
         return convertTensor(self.astype('float32'))
     def long(self):
-        return convertTensor(self.astype('int64'))
+        return convertTensor(self.astype('int32'))
 
     def dot(self,x):
         return torch.dot(self,x)
@@ -210,8 +211,9 @@ class Tensor(paddle.Tensor):
         return varbase_to_tensor(x)
 
     def repeat(self,*size):
-        x=np.tile(self.numpy(),size )
-        return Tensor(x)
+
+        x=paddle.tile(self,size)
+        return convertTensor(x)
 
 
     def add(self,x):
@@ -232,7 +234,8 @@ class Tensor(paddle.Tensor):
         return self.numpy().flatten()[0]
 
     def t(self):
-        return convertTensor(fluid.layers.transpose(self,np.arange(len(self.shape))[::-1]))
+        return convertTensor(paddle.transpose(self,paddle.arange(len(self.shape))[::-1]))
+        # return convertTensor(fluid.layers.transpose(self,np.arange(len(self.shape))[::-1]))
     def reshape(self,*size):
         if len(size)==1:
             size=size[0]
@@ -240,8 +243,11 @@ class Tensor(paddle.Tensor):
 
     def __getitem__(self,args):
         from typing import   Iterable
+
         if isinstance(args, np.ndarray):
-            args=paddorch.from_numpy(args)
+            # print(max(args),min(args),self.shape,len(args),len(set(args)) )
+            args=paddorch.from_numpy(args).long()
+            # print("converted numpy", type(args))
         if  isinstance(args,paddle.Tensor):
             if args.dtype==paddle.fluid.core.VarDesc.VarType.BOOL:
                 return convertTensor(paddle.masked_select(self,args))

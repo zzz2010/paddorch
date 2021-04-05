@@ -271,16 +271,17 @@ class GRU(paddle.nn.GRU,Module):
 
 
 
-class Embedding(dygraph.Embedding,Module):
+class Embedding(paddle.nn.Embedding,Module):
     def __init__(self,num_embeddings: int, embedding_dim: int,
                  padding_idx  = None, max_norm = None, norm_type: float = 2.0, scale_grad_by_freq: bool = False,
                  sparse: bool = False, _weight = None):
-        super(Embedding,self).__init__(size=[num_embeddings,embedding_dim],
-                 is_sparse=sparse,
-                 is_distributed=False,
+        super(Embedding,self).__init__(     num_embeddings,
+                 embedding_dim,
                  padding_idx=padding_idx,
-                 param_attr=None,
-                 dtype='float32')
+                 sparse=sparse,
+                 weight_attr=_weight,
+                 name=None
+          )
         self.norm_type=norm_type
         self.max_norm=max_norm
 

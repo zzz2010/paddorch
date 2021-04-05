@@ -75,3 +75,10 @@ def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
     ret_Mat2=paddle.scatter_(ret_Mat,sparseX.indices[0] ,updates,overwrite=False)
     del ret_Mat
     return ret_Mat2
+
+# def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
+#     ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
+#     ret_Mat.stop_gradient = True
+#     updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*sparseX.values .view(-1,1)
+#     ret_Mat2=paddle.scatter(ret_Mat,sparseX.indices[0] ,updates,overwrite=False)
+#     return ret_Mat2

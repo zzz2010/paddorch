@@ -46,22 +46,9 @@ def squeeze(x,axes=[-1]):
     return Tensor(paddle.squeeze(x,axes))
 
 def split(x,batch_size,dim=0):
+    return [convertTensor(y) for y in paddle.split(x,batch_size,dim)]
 
-    if not isinstance(batch_size,int):
-        Y=[]
-        st=0
-        for bs in batch_size: #list of split size
-            ed=st+bs
-            Y.append(x[st:ed])
-            st=ed
 
-    else:
-        n_splits = x.shape[0] // batch_size
-        last_index=n_splits*batch_size
-        Y= paddle.split(x[:last_index],n_splits,dim=dim)
-    # if last_index != x.shape[0]: ##handle not equal divide case
-    #     Y.append(x[last_index:])
-    return Y
 
 def empty(*size):
     return zeros(*size)
