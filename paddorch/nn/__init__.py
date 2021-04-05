@@ -275,7 +275,7 @@ class Embedding(paddle.nn.Embedding,Module):
     def __init__(self,num_embeddings: int, embedding_dim: int,
                  padding_idx  = None, max_norm = None, norm_type: float = 2.0, scale_grad_by_freq: bool = False,
                  sparse: bool = False, _weight = None):
-        super(Embedding,self).__init__(     num_embeddings,
+        super(Embedding,self).__init__( num_embeddings,
                  embedding_dim,
                  padding_idx=padding_idx,
                  sparse=sparse,

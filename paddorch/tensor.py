@@ -140,7 +140,7 @@ class Tensor(paddle.Tensor):
     def float(self):
         return convertTensor(self.astype('float32'))
     def long(self):
-        return convertTensor(self.astype('int32'))
+        return convertTensor(self.astype('int64'))
 
     def dot(self,x):
         return torch.dot(self,x)
@@ -151,7 +151,7 @@ class Tensor(paddle.Tensor):
         return torch.matmul(self,y)
 
     def norm(self,p=2,dim=-1, keepdim=True):
-        return torch.norm(self,p=2,dim=dim,keepdim=keepdim)
+        return torch.norm(self,p=p,dim=dim,keepdim=keepdim)
 
     def expand(self,*sizes):
         ##handle -1 case

@@ -29,8 +29,8 @@ def trace(x, offset=0, dim1=0, dim2=1, out=None):
 def from_numpy(x):
     return Tensor(x)
 def bmm(x,y):
-
     return Tensor(paddle.bmm(x,y))
+
 def eye(n , m ):
     return Tensor(paddle.eye(n,m))
 
@@ -57,7 +57,7 @@ def matmul(x,y):
     return Tensor(paddle.matmul(x,y ))
 def tensor(x,dtype=np.float32):
     if isinstance(x,list):
-        x=np.array(x,dtype=dtype)
+        x=paddle.to_tensor(x,dtype=dtype,stop_gradient=True)
     if isinstance(x,int) or isinstance(x,np.int64):
         return zeros(x)
     return Tensor(x)

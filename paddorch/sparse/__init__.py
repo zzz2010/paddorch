@@ -74,6 +74,7 @@ def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
     updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*sparseX.values .view(-1,1)
     ret_Mat2=paddle.scatter_(ret_Mat,sparseX.indices[0] ,updates,overwrite=False)
     del ret_Mat
+    ret_Mat2.stop_gradient=False ##re-enable gradient!
     return ret_Mat2
 
 # def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
