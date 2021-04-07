@@ -67,14 +67,23 @@ def mm_smallmem(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,max
     return ret_Mat
 
 
+# def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
+#     ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
+#     ret_Mat.stop_gradient=True
+#
+#     updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*sparseX.values .view(-1,1)
+#     ret_Mat2=paddle.scatter_(ret_Mat,sparseX.indices[0] ,updates,overwrite=False)
+#     del ret_Mat
+#     ret_Mat2.stop_gradient=False ##re-enable gradient!
+#     return ret_Mat2
+
+
+
 def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
-    ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
-    ret_Mat.stop_gradient=True
 
     updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*sparseX.values .view(-1,1)
-    ret_Mat2=paddle.scatter_(ret_Mat,sparseX.indices[0] ,updates,overwrite=False)
-    del ret_Mat
-    ret_Mat2.stop_gradient=False ##re-enable gradient!
+    ret_Mat2=paddle.scatter_nd( paddle.reshape(sparseX.indices[0],(-1,1)) ,updates,(sparseX.shape[0],denseY.shape[1]))
+
     return ret_Mat2
 
 # def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):

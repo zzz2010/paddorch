@@ -3,7 +3,7 @@ import types
 
 from paddle import fluid
 from paddle.fluid.dygraph.learning_rate_scheduler import  LearningRateDecay
-
+from paddle.optimizer.lr import CosineAnnealingDecay,ExponentialDecay,NaturalExpDecay,LinearWarmup,MultiStepDecay
 class LambdaLR(LearningRateDecay):
     """Sets the learning rate of each parameter group to the initial lr
     times a given function. When last_epoch=-1, sets initial lr as lr.

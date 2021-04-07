@@ -179,10 +179,10 @@ def multinomial(weights , num_samples , replacement=False):
     return  select_samples
 def LongTensor(x):
     if isinstance(x,int):
-        return Tensor(fluid.Tensor)
+        return Tensor(paddle.to_tensor([x]))
     if isinstance(x,list):
-        x=np.array(x,dtype=np.int32)
-    return Tensor(x ).astype("int32")
+        x=paddle.to_tensor(x,dtype="int32")
+    return convertTensor(Tensor(x ).astype("int32"))
 
 def stack(inputs,dim=0,out=None):
     x= paddle.stack(inputs ,axis=dim )
