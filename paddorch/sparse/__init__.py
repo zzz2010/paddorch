@@ -5,6 +5,7 @@ class Tensor(object):
     def __init__(self,indices,values,size):
         self.values=values
         self.indices=indices
+        self.indices.stop_gradient = True
         self.shape=size
         self.device=None
 
@@ -46,13 +47,15 @@ class IntTensor(Tensor):
     def __init__(self,indices,values,size):
         super(IntTensor, self).__init__(indices,values.astype("int32"),size)
 
-def mm_slow(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase):
-    ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
-    for i in range(sparseX._nnz()):
-        row=int(sparseX.indices[0][i])
-        col=int(sparseX.indices[1][i])
-        ret_Mat[row]+=denseY[col]*sparseX.values[i]
-    return ret_Mat
+
+##slow version
+# def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase):
+#     ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
+#     for i in range(sparseX._nnz()):
+#         row=int(sparseX.indices[0][i])
+#         col=int(sparseX.indices[1][i])
+#         ret_Mat[row]+=denseY[col]*sparseX.values[i]
+#     return ret_Mat
 
 def mm_smallmem(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,max_query_size=2000000):
     batch_size = sparseX._nnz()
@@ -67,22 +70,32 @@ def mm_smallmem(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,max
     return ret_Mat
 
 
-# def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
-#     ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
-#     ret_Mat.stop_gradient=True
-#
-#     updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*sparseX.values .view(-1,1)
-#     ret_Mat2=paddle.scatter_(ret_Mat,sparseX.indices[0] ,updates,overwrite=False)
-#     del ret_Mat
-#     ret_Mat2.stop_gradient=False ##re-enable gradient!
-#     return ret_Mat2
+#old mm,  Use this one!! faster
+def mm_fast(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
 
-
-
-def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
+    ret_Mat=paddorch.zeros(sparseX.shape[0],denseY.shape[1])
+    ret_Mat.stop_gradient=True
 
     updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*sparseX.values .view(-1,1)
-    ret_Mat2=paddle.scatter_nd( paddle.reshape(sparseX.indices[0],(-1,1)) ,updates,(sparseX.shape[0],denseY.shape[1]))
+    ret_Mat2=paddle.scatter_(ret_Mat,sparseX.indices[0] ,updates,overwrite=False)
+    del ret_Mat
+    ret_Mat2.stop_gradient=False ##re-enable gradient!
+    return ret_Mat2
+
+
+def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,fast=True ):
+    if fast:
+        return  mm_fast(sparseX,denseY)
+    else:
+        return  mm_backwardcorrect(sparseX,denseY)
+
+#new mm
+def mm_backwardcorrect(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
+
+
+    update_inds=sparseX.indices[0]
+    updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*paddle.unsqueeze_(sparseX.values,1) #sparseX.values .view(-1,1)
+    ret_Mat2=paddle.scatter_nd( paddle.reshape(update_inds,(-1,1)) ,updates,(sparseX.shape[0],denseY.shape[1]))
 
     return ret_Mat2
 

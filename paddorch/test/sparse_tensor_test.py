@@ -1,11 +1,12 @@
 
 
 import torch
-N_dim=130000
+N_dim=100
+N_dim2=N_dim
 torch.manual_seed(0)
-a = torch.randn(2, N_dim).to_sparse().requires_grad_(False)
+a = torch.randn(N_dim2, N_dim).to_sparse().requires_grad_(False)
 a_dense=a.to_dense().numpy()
-b = torch.randn(N_dim, 2, requires_grad=True)
+b = torch.randn(N_dim, N_dim2, requires_grad=True)
 
 
 
@@ -15,23 +16,30 @@ import paddorch
 import paddle
 import numpy as np
 
-tid=paddorch.LongTensor(np.arange(2))
-dd=paddorch.randn((3,4))
-tid2=paddorch.Tensor(dd)
-print("test",tid2)
-a=paddorch.sparse.FloatTensor(paddorch.LongTensor(a._indices().detach().numpy()),paddorch.FloatTensor(a._values().detach().numpy()),(2, N_dim))
+paddle.enable_static()
+
+a=paddorch.sparse.FloatTensor(paddorch.LongTensor(a._indices().detach().numpy()),paddorch.FloatTensor(a._values().detach().numpy()),(N_dim2, N_dim))
 b=paddorch.from_numpy(b.detach().numpy())
+b_param=paddorch.nn.Parameter(b)
+b.stop_gradient=False
+a.values.stop_gradient=False
 import time
 before=time.time()
-for _ in range(10000):
-    y = paddorch.sparse.mm(a, b)
+for _ in range(6):
+    y = paddorch.sparse.mm(a, b,fast=False)
+
+    b=paddorch.cat([b,y],dim=1)
+
+y.sum().backward()
 
 after=time.time()
 print("time:",after-before)
 print(y)
+print("max grad",a.values.gradient())
 
 
 
 
-y2=paddorch.mm(paddorch.from_numpy(a_dense),b)
-print(y2)
+# y2=paddorch.mm(paddorch.from_numpy(a_dense),b)
+# print(y2)
+
