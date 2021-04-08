@@ -94,7 +94,7 @@ def mm_backwardcorrect(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarB
 
 
     update_inds=sparseX.indices[0]
-    updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)*paddle.unsqueeze_(sparseX.values,1) #sparseX.values .view(-1,1)
+    updates=paddle.index_select(denseY, sparseX.indices[1] ,axis=0)* sparseX.values .view(-1,1)
     ret_Mat2=paddle.scatter_nd( paddle.reshape(update_inds,(-1,1)) ,updates,(sparseX.shape[0],denseY.shape[1]))
 
     return ret_Mat2
