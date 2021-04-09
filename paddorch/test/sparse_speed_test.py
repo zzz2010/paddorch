@@ -23,17 +23,31 @@ import paddle
 import numpy as np
 import torch
 from paddle import fluid
-place= fluid.CPUPlace()
 
-a=torch.sparse.FloatTensor(torch.LongTensor(np.stack([I,J]) ), torch.FloatTensor(V ) ,(N_dim2, N_dim)   )
-b=torch.from_numpy(b_np)
+#
+device="cuda"
+device="cpu"
+
+
+if device=="cuda":
+    a = torch.cuda.sparse.FloatTensor(torch.LongTensor(np.stack([I, J])).cuda(), torch.FloatTensor(V).cuda(), (N_dim2, N_dim))
+else:
+    place = fluid.CPUPlace()
+    a=torch.sparse.FloatTensor(torch.LongTensor(np.stack([I,J]) ), torch.FloatTensor(V ) ,(N_dim2, N_dim)   )
+
+
+b=torch.from_numpy(b_np).to(device)
 b_param=torch.nn.Parameter(b)
 b.requires_grad=True
 a.requires_grad=True
 import time
 before=time.time()
+
 for _ in range(6):
-    y = torch.sparse.mm(a, b )
+    if device == "cuda":
+        y = torch.sparse.mm(a, b )
+    else:
+        y = torch.sparse.mm(a, b)
 
     b=torch.cat([b,y],dim=1)
 
@@ -43,7 +57,9 @@ after=time.time()
 print("time:",after-before)
 
 # print("max grad",torch.max(a.grad))
-
+if device=="cuda":
+    import sys
+    sys.exit()
 
 with fluid.dygraph.guard(place=place):
     a=paddorch.sparse.FloatTensor(paddorch.LongTensor(np.stack([I,J]) ), paddorch.FloatTensor(V ) ,(N_dim2, N_dim))
@@ -57,6 +73,7 @@ with fluid.dygraph.guard(place=place):
         y = paddorch.sparse.mm(a, b,fast=False)
 
         b=paddorch.cat([b,y],dim=1)
+        break
 
     y.sum().backward()
 
