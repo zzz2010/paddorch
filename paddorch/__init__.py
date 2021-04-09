@@ -115,14 +115,14 @@ def linspace(start, stop, num, dtype="float32"):
     return Tensor(fluid.layers.linspace(start, stop, num, dtype))
 
 def randint(low, high, size ,
-           dtype="int64", requires_grad=False):
+            dtype="int64", requires_grad=False):
     return Tensor(paddle.randint(low,
-            high=high,
-            shape=size,
-            out=None,
-            dtype=dtype,
-            device=None,
-            stop_gradient=not requires_grad))
+                                 high=high,
+                                 shape=size,
+                                 out=None,
+                                 dtype=dtype,
+                                 device=None,
+                                 stop_gradient=not requires_grad))
 
 def rand(shape):
     if isinstance(shape,int):
@@ -154,7 +154,7 @@ def as_tensor(x,dtype=np.float32):
 
 def is_tensor(x):
     return isinstance(x, ( dygraph.core.VarBase,  dygraph.framework.Variable,
-                        dygraph.framework.ComplexVariable))
+                           dygraph.framework.ComplexVariable))
 
 def manual_seed(seed):
     fluid.Program.random_seed=seed
@@ -353,7 +353,7 @@ def save(dict_obj, filename):
             os.makedirs(filename,exist_ok=True)
             for key in dict_obj:
 
-                    fluid.dygraph.save_dygraph( dict_obj[key], filename+"/"+str(key) )
+                fluid.dygraph.save_dygraph( dict_obj[key], filename+"/"+str(key) )
     except Exception as E:
         print(E)
 

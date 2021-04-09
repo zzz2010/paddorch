@@ -10,7 +10,7 @@ class Tensor(object):
             self.values=paddorch.convertTensor(paddle.index_select(values,order_ind))
             self.indices=paddorch.convertTensor(paddle.index_select(indices,order_ind,axis=1))
 
-                    ##record row start indices, and row end indices
+            ##record row start indices, and row end indices
             self.row_starts=[0]
             self.row_end = []
             last_row=0
@@ -95,7 +95,7 @@ class IntTensor(Tensor):
 
 def mm_smallmem(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,max_query_size=2000000):
     batch_size = sparseX._nnz()
-     #avoid memory explode
+    #avoid memory explode
     if batch_size>max_query_size:
         batch_size=max_query_size//sparseX.shape[1]*sparseX.shape[1]
 
