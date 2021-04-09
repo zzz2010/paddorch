@@ -1,5 +1,5 @@
 import paddle.fluid as fluid
-
+import paddle.static.Variable as Variable
 
 
 def grad(outputs, inputs, grad_outputs=None,retain_graph=False,

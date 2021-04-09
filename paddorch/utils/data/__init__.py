@@ -2,6 +2,7 @@ from paddle import fluid
 from paddle.fluid.io import  Dataset,BatchSampler
 import numpy as np
 import paddorch
+import paddle
 
 def default_collate_fn(batch):
     """
@@ -224,3 +225,7 @@ class TensorDataset(Dataset):
 
     def __len__(self):
         return self.tensors[0].shape[0]
+
+
+def get_worker_info():
+    return paddle.fluid.io.get_worker_info()

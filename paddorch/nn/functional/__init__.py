@@ -2,6 +2,7 @@ import paddle.fluid as fluid
 from paddle.fluid.initializer import NumpyArrayInitializer
 import paddorch as torch
 from paddle.nn.functional import softplus
+import paddle
 
 def avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
     if stride is None:
@@ -132,3 +133,21 @@ def conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_paddi
 #
 # def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):
 #     return fluid.dygraph.L1Loss()
+
+
+
+def elu(x):
+    return fluid.layers.elu(x, alpha=1.0, name=None)
+
+
+def cross_entropy(input, label):
+    return paddle.nn.functional.cross_entropy(input, label, weight=None, ignore_index=- 100, reduction='mean',
+                                              soft_label=False, axis=- 1, name=None)
+
+
+def cosine_similarity(x1, x2):
+    return paddle.nn.functional.cosine_similarity(x1, x2, axis=1, eps=1e-8)
+
+
+def log_softmax(x, dim):
+    return paddle.nn.functional.log_softmax(x, axis=dim, dtype=None, name=None)

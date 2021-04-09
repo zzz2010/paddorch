@@ -379,3 +379,81 @@ def tanh(x):
 
 def transpose(x,*perm):
     return x.transpose(*perm)
+
+
+def transpose(x, *perm):
+    return x.transpose(*perm)
+
+
+def unique(x):
+    return paddle.unique(x)
+
+
+def argsort(x, dim=-1, descending=False):
+    return paddle.argsort(x, axis=dim, descending=descending)
+
+
+def exp(x):
+    return paddle.exp(x)
+
+
+def index_select(x, dim, index):
+    return paddle.index_select(x, index, axis=dim)
+
+
+def unqueeze(x, dim):
+    return paddle.unsqueeze(x, axis=dim)
+
+
+def reshape(x, shape):
+    return paddle.reshape(x, shape)
+
+
+def uniform_(shape, low, high):
+    return paddle.uniform(shape, dtype='float32', min=low, max=high, seed=0)
+
+
+def full(shape, fill_value, dtype, device):
+    return paddle.full(shape, fill_value, dtype=dtype, name=device)
+
+
+def nonzero(x):
+    return paddle.nonzero(x, as_tuple=False)
+
+
+def sort(x, axis=1, descending=False):
+    return paddle.sort(x, axis=axis, descending=descending, name=None)
+
+
+def randperm(n):
+    return paddle.randperm(n, dtype='int64', name=None)
+
+
+def relu(x):
+    return paddle.fluid.layers.relu(x)
+
+
+def softmax(x, dim=-1):
+    return paddle.fluid.layers.softmax(input, use_cudnn=False, name=None, axis=dim)
+
+
+def diag(x):
+    return paddle.diag(x, offset=0, padding_value=0, name=None)
+
+
+def sparse_coo_tensor(indices, data, shape):
+    sparse_tensor = sparse.FloatTensor(indices, data, shape)
+    return sparse_tensor
+
+
+def to_dense(x):
+    pass
+    return x
+
+
+def assign(x, output=None):
+    return tensor.assign(x, output)
+
+
+def expand(x, shape):
+    return paddle.expand(x, shape)

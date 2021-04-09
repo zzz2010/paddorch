@@ -1,5 +1,6 @@
 import paddle.fluid as fluid
 import paddorch
+import paddle
 
 
 def is_available():
@@ -15,3 +16,6 @@ def manual_seed_all(seed):
 
 def manual_seed(seed):
     paddorch.manual_seed(seed)
+
+def set_device(device):
+    return paddle.set_device(device)

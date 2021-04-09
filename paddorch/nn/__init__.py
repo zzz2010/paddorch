@@ -1,17 +1,40 @@
 import paddle.fluid as fluid
 from paddle.fluid import dygraph
-from paddle.fluid.dygraph import layers,Conv2D,Linear,InstanceNorm
-from paddle.fluid.dygraph import Layer
+from paddle.fluid.dygraph import layers, Conv2D, Linear, InstanceNorm
 from . import functional as F
-from paddle.fluid.framework import Variable, in_dygraph_mode
 from .parameter import Parameter
-from paddle.fluid import core
-from paddle.fluid.data_feeder import convert_dtype, check_variable_and_dtype, check_type, check_dtype
+import numpy as np
 import paddorch.nn.utils
-import paddle
 from . import init
-from ..tensor import Tensor,convertTensor
-from paddle.nn import LogSigmoid,Sigmoid
+from ..tensor import Tensor, convertTensor
+import collections
+import math
+import sys
+from functools import partial, reduce
+import numbers
+import paddle
+import paddle.fluid as fluid
+from paddle import framework
+
+from paddle.nn import initializer as I
+from paddle.fluid.dygraph import Layer, LayerList
+from paddle.fluid.layers import utils
+from paddle.fluid.layers.utils import map_structure, flatten, pack_sequence_as
+import six
+
+from paddle.fluid.dygraph import layers
+from paddle.framework import get_default_dtype, set_default_dtype
+from paddle.fluid.framework import in_dygraph_mode
+
+from paddle.fluid.initializer import Constant
+from paddle.fluid.param_attr import ParamAttr
+from paddle.fluid.data_feeder import check_variable_and_dtype, check_type
+from paddle.fluid import core, dygraph_utils
+
+from paddle.nn.functional import batch_norm, layer_norm, instance_norm
+
+import warnings
+from paddle.nn import functional as F
 
 
 def clone_layer(layer):
@@ -633,3 +656,846 @@ class Spectralnorm(Module):
             self.layer.bias=self.bias_orig
         out = self.layer(x)
         return out
+
+def split_states(states, bidirectional=False, state_components=1):
+    r"""
+    Split states of RNN network into possibly nested list or tuple of
+    states of each RNN cells of the RNN network.
+    Parameters:
+        states (Tensor|tuple|list): the concatenated states for RNN network.
+            When `state_components` is 1, states in a Tensor with shape
+            `(L*D, N, C)` where `L` is the number of layers of the RNN
+            network, `D` is the number of directions of the RNN network(1
+            for unidirectional RNNs and 2 for bidirectional RNNs), `N` is
+            the batch size of the input to the RNN network, `C` is the
+            hidden size of the RNN network.
+            When `state_components` is larger than 1, `states` is a tuple of
+            `state_components` Tensors that meet the requirements described
+            above.
+
+            For SimpleRNNs and GRUs, `state_components` is 1, and for LSTMs,
+            `state_components` is 2.
+        bidirectional (bool): whether the state is of a bidirectional RNN
+            network. Defaults to False.
+        state_components (int): the number of the components of the states. see
+            `states` above. Defaults to 1.
+
+    Returns:
+        A nested list or tuple of RNN cell states.
+        If `bidirectional` is True, it can be indexed twice to get an RNN
+        cell state. The first index indicates the layer, the second index
+        indicates the direction.
+        If `bidirectional` is False, it can be indexed once to get an RNN
+        cell state. The index indicates the layer.
+        Note that if `state_components` is larger than 1, an RNN cell state
+        can be indexed one more time to get a tensor of shape(N, C), where
+        `N` is the batch size of the input to the RNN cell, and `C` is the
+        hidden size of the RNN cell.
+    """
+    if state_components == 1:
+        states = paddle.unstack(states)
+        if not bidirectional:
+            return states
+        else:
+            return list(zip(states[::2], states[1::2]))
+    else:
+        assert len(states) == state_components
+        states = tuple([paddle.unstack(item) for item in states])
+        if not bidirectional:
+            return list(zip(*states))
+        else:
+            states = list(zip(*states))
+            return list(zip(states[::2], states[1::2]))
+
+
+def concat_states(states, bidirectional=False, state_components=1):
+    r"""
+    Concatenate a possibly nested list or tuple of RNN cell states into a
+    compact form.
+    Parameters:
+        states (list|tuple): a possibly nested list or tuple of RNN cell
+            states.
+            If `bidirectional` is True, it can be indexed twice to get an
+            RNN cell state. The first index indicates the layer, the second
+            index indicates the direction.
+            If `bidirectional` is False, it can be indexed once to get an RNN
+            cell state. The index indicates the layer.
+            Note that if `state_components` is larger than 1, an RNN cell
+            state can be indexed one more time to get a tensor of shape(N, C),
+            where `N` is the batch size of the input to the RNN cell, and
+            `C` is the hidden size of the RNN cell.
+        bidirectional (bool): whether the state is of a bidirectional RNN
+            network. Defaults to False.
+        state_components (int): the number of the components of the states. see
+            `states` above. Defaults to 1.
+
+    Returns:
+        Concatenated states for RNN network.
+        When `state_components` is 1, states in a Tensor with shape
+        `(L\*D, N, C)` where `L` is the number of layers of the RNN
+        network, `D` is the number of directions of the RNN network(1 for
+        unidirectional RNNs and 2 for bidirectional RNNs), `N` is the batch
+        size of the input to the RNN network, `C` is the hidden size of the
+        RNN network.
+
+    """
+    if state_components == 1:
+        return paddle.stack(flatten(states))
+    else:
+        states = flatten(states)
+        componnets = []
+        for i in range(state_components):
+            componnets.append(states[i::state_components])
+        return tuple([paddle.stack(item) for item in componnets])
+
+
+class RNNCellBase(Layer):
+    r"""
+    RNNCellBase is the base class for abstraction representing the calculations
+    mapping the input and state to the output and new state. It is suitable to
+    and mostly used in RNN.
+    """
+
+    def get_initial_states(self,
+                           batch_ref,
+                           shape=None,
+                           dtype=None,
+                           init_value=0.,
+                           batch_dim_idx=0):
+        r"""
+        Generate initialized states according to provided shape, data type and
+        value.
+        Parameters:
+            batch_ref (Tensor): A tensor, which shape would be used to
+                determine the batch size, which is used to generate initial
+                states. For `batch_ref`'s shape d, `d[batch_dim_idx]` is
+                treated as batch size.
+            shape (list|tuple, optional): A (possibly nested structure of) shape[s],
+                where a shape is a list/tuple of integer. `-1` (for batch size)
+                will be automatically prepended if a shape does not starts with
+                it. If None, property `state_shape` will be used. Defaults to
+                None.
+            dtype (str|list|tuple, optional): A (possibly nested structure of)
+                data type[s]. The structure must be same as that of `shape`,
+                except when all tensors' in states has the same data type, a
+                single data type can be used. If None and property `cell.state_shape`
+                is not available, current default floating type of paddle is
+                used. Defaults to None.
+            init_value (float, optional): A float value used to initialize states.
+                Defaults to 0.
+            batch_dim_idx (int, optional): An integer indicating which
+                dimension of the of `batch_ref` represents batch. Defaults to 0.
+
+        Returns:
+            init_states (Tensor|tuple|list): tensor of the provided shape and
+                dtype, or list of tensors that each satisfies the requirements,
+                packed in the same structure as `shape` and `type` does.
+        """
+        # TODO: use inputs and batch_size
+        batch_ref = flatten(batch_ref)[0]
+
+        def _is_shape_sequence(seq):
+            if sys.version_info < (3,):
+                integer_types = (
+                    int,
+                    long)
+            else:
+                integer_types = (int,)
+            """For shape, list/tuple of integer is the finest-grained objection"""
+            if (isinstance(seq, list) or isinstance(seq, tuple)):
+                if reduce(lambda flag, x: isinstance(x, integer_types) and flag,
+                          seq, True):
+                    return False
+            # TODO: Add check for the illegal
+            if isinstance(seq, dict):
+                return True
+            return (isinstance(seq, collections.Sequence) and
+                    not isinstance(seq, six.string_types))
+
+        class Shape(object):
+            def __init__(self, shape):
+                self.shape = shape if shape[0] == -1 else ([-1] + list(shape))
+
+        # nested structure of shapes
+        states_shapes = self.state_shape if shape is None else shape
+        is_sequence_ori = utils.is_sequence
+        utils.is_sequence = _is_shape_sequence
+        states_shapes = map_structure(lambda shape: Shape(shape), states_shapes)
+        utils.is_sequence = is_sequence_ori
+
+        # nested structure of dtypes
+        try:
+            states_dtypes = self.state_dtype if dtype is None else dtype
+        except NotImplementedError:
+            states_dtypes = framework.get_default_dtype()
+        if len(flatten(states_dtypes)) == 1:
+            dtype = flatten(states_dtypes)[0]
+            states_dtypes = map_structure(lambda shape: dtype, states_shapes)
+
+        init_states = map_structure(
+            lambda shape, dtype: paddle.fluid.layers.fill_constant_batch_size_like(
+                input=batch_ref,
+                shape=shape.shape,
+                dtype=dtype,
+                value=init_value,
+                input_dim_idx=batch_dim_idx), states_shapes, states_dtypes)
+        return init_states
+
+    @property
+    def state_shape(self):
+        r"""
+        Abstract method (property).
+        Used to initialize states.
+        A (possiblely nested structure of) shape[s], where a shape is a
+        list/tuple of integers (-1 for batch size would be automatically
+        inserted into a shape if shape is not started with it).
+        Not necessary to be implemented if states are not initialized by
+        `get_initial_states` or the `shape` argument is provided when using
+        `get_initial_states`.
+        """
+        raise NotImplementedError(
+            "Please add implementaion for `state_shape` in the used cell.")
+
+    @property
+    def state_dtype(self):
+        r"""
+        Abstract method (property).
+        Used to initialize states.
+        A (possiblely nested structure of) data types[s]. The structure must be
+        same as that of `shape`, except when all tensors' in states has the same
+        data type, a signle data type can be used.
+        Not necessary to be implemented if states are not initialized
+        by `get_initial_states` or the `dtype` argument is provided when using
+        `get_initial_states`.
+        """
+        raise NotImplementedError(
+            "Please add implementaion for `state_dtype` in the used cell.")
+
+
+class GRUCell(RNNCellBase):
+    r"""
+    Gated Recurrent Unit (GRU) RNN cell. Given the inputs and previous states,
+    it computes the outputs and updates states.
+    The formula for GRU used is as follows:
+    ..  math::
+        r_{t} & = \sigma(W_{ir}x_{t} + b_{ir} + W_{hr}h_{t-1} + b_{hr})
+        z_{t} & = \sigma(W_{iz}x_{t} + b_{iz} + W_{hz}h_{t-1} + b_{hz})
+        \widetilde{h}_{t} & = \tanh(W_{ic}x_{t} + b_{ic} + r_{t} * (W_{hc}h_{t-1} + b_{hc}))
+        h_{t} & = z_{t} * h_{t-1} + (1 - z_{t}) * \widetilde{h}_{t}
+        y_{t} & = h_{t}
+
+    where :math:`\sigma` is the sigmoid fucntion, and * is the elemetwise
+    multiplication operator.
+    Please refer to `An Empirical Exploration of Recurrent Network Architectures
+    <http://proceedings.mlr.press/v37/jozefowicz15.pdf>`_ for more details.
+    Parameters:
+        input_size (int): The input size.
+        hidden_size (int): The hidden size.
+        weight_ih_attr(ParamAttr, optional): The parameter attribute for
+            `weight_ih`. Default: None.
+        weight_hh_attr(ParamAttr, optional): The parameter attribute for
+            `weight_hh`. Default: None.
+        bias_ih_attr (ParamAttr, optional): The parameter attribute for the
+            `bias_ih`. Default: None.
+        bias_hh_attr (ParamAttr, optional): The parameter attribute for the
+            `bias_hh`. Default: None.
+        name (str, optional): Name for the operation (optional, default is
+            None). For more information, please refer to :ref:`api_guide_Name`.
+    Variables:
+        - **weight_ih** (Parameter): shape (3 * hidden_size, input_size), input to hidden weight, which corresponds to the concatenation of :math:`W_{ir}, W_{iz}, W_{ic}` in the formula.
+        - **weight_hh** (Parameter): shape (3 * hidden_size, hidden_size), hidden to hidden weight, which corresponds to the concatenation of :math:`W_{hr}, W_{hz}, W_{hc}` in the formula.
+        - **bias_ih** (Parameter): shape (3 * hidden_size, ), input to hidden bias, which corresponds to the concatenation of :math:`b_{ir}, b_{iz}, b_{ic}` in the formula.
+        - **bias_hh** (Parameter): shape (3 * hidden_size, ), hidden to hidden bias, swhich corresponds to the concatenation of :math:`b_{hr}, b_{hz}, b_{hc}` in the formula.
+    Inputs:
+        - **inputs** (Tensor): A tensor with shape `[batch_size, input_size]`, corresponding to :math:`x_t` in the formula.
+        - **states** (Tensor): A tensor with shape `[batch_size, hidden_size]`, corresponding to :math:`h_{t-1}` in the formula.
+    Returns:
+        - **outputs** (Tensor): shape `[batch_size, hidden_size]`, the output, corresponding to :math:`h_{t}` in the formula.
+        - **states** (Tensor): shape `[batch_size, hidden_size]`, the new hidden state, corresponding to :math:`h_{t}` in the formula.
+
+    Notes:
+        All the weights and bias are initialized with `Uniform(-std, std)` by
+        default. Where std = :math:`\frac{1}{\sqrt{hidden\_size}}`. For more
+        information about parameter initialization, please refer to s:ref:`api_fluid_ParamAttr`.
+    Examples:
+        .. code-block:: python
+            import paddle
+            x = paddle.randn((4, 16))
+            prev_h = paddle.randn((4, 32))
+            cell = paddle.nn.GRUCell(16, 32)
+            y, h = cell(x, prev_h)
+            print(y.shape)
+            print(h.shape)
+            #[4,32]
+            #[4,32]
+    """
+
+    def __init__(self,
+                 input_size,
+                 hidden_size,
+                 weight_ih_attr=None,
+                 weight_hh_attr=None,
+                 bias_ih_attr=None,
+                 bias_hh_attr=None,
+                 name=None):
+        super(GRUCell, self).__init__()
+        std = 1.0 / math.sqrt(hidden_size)
+        self.weight_ih = self.create_parameter(
+            (3 * hidden_size, input_size),
+            weight_ih_attr,
+            default_initializer=I.Uniform(-std, std))
+        self.weight_hh = self.create_parameter(
+            (3 * hidden_size, hidden_size),
+            weight_hh_attr,
+            default_initializer=I.Uniform(-std, std))
+        self.bias_ih = self.create_parameter(
+            (3 * hidden_size,),
+            bias_ih_attr,
+            is_bias=True,
+            default_initializer=I.Uniform(-std, std))
+        self.bias_hh = self.create_parameter(
+            (3 * hidden_size,),
+            bias_hh_attr,
+            is_bias=True,
+            default_initializer=I.Uniform(-std, std))
+
+        self.hidden_size = hidden_size
+        self.input_size = input_size
+        self._gate_activation = F.sigmoid
+        self._activation = paddle.tanh
+
+    def forward(self, inputs, states=None):
+        if states is None:
+            states = self.get_initial_states(inputs, self.state_shape)
+
+        pre_hidden = states
+        x_gates = paddle.matmul(inputs, self.weight_ih, transpose_y=True)
+        if self.bias_ih is not None:
+            x_gates = x_gates + self.bias_ih
+        h_gates = paddle.matmul(pre_hidden, self.weight_hh, transpose_y=True)
+        if self.bias_hh is not None:
+            h_gates = h_gates + self.bias_hh
+
+        x_r, x_z, x_c = paddle.split(x_gates, num_or_sections=3, axis=1)
+        h_r, h_z, h_c = paddle.split(h_gates, num_or_sections=3, axis=1)
+
+        r = self._gate_activation(x_r + h_r)
+        z = self._gate_activation(x_z + h_z)
+        c = self._activation(x_c + r * h_c)  # apply reset gate after mm
+        h = (pre_hidden - c) * z + c
+
+        return h, h
+
+    @property
+    def state_shape(self):
+        r"""
+        The `state_shape` of GRUCell is a shape `[hidden_size]` (-1 for batch
+        size would be automatically inserted into shape). The shape corresponds
+        to the shape of :math:`h_{t-1}`.
+        """
+        return (self.hidden_size,)
+
+    def extra_repr(self):
+        return '{input_size}, {hidden_size}'.format(**self.__dict__)
+
+class LayerNorm(layers.Layer):
+    r"""
+    :alias_main: paddle.nn.LayerNorm
+	:alias: paddle.nn.LayerNorm,paddle.nn.layer.LayerNorm,paddle.nn.layer.norm.LayerNorm
+	:old_api: paddle.fluid.dygraph.LayerNorm
+    This interface is used to construct a callable object of the ``LayerNorm`` class.
+    For more details, refer to code examples.
+    It implements the function of the Layer Normalization Layer and can be applied to mini-batch input data.
+    Refer to `Layer Normalization <https://arxiv.org/pdf/1607.06450v1.pdf>`_
+    The formula is as follows:
+    ..  math::
+        \\mu & = \\frac{1}{H}\\sum_{i=1}^{H} x_i
+        \\sigma & = \\sqrt{\\frac{1}{H}\sum_{i=1}^{H}{(x_i - \\mu)^2} + \\epsilon}
+        y & = f(\\frac{g}{\\sigma}(x - \\mu) + b)
+    - :math:`x`: the vector representation of the summed inputs to the neurons in that layer.
+    - :math:`H`: the number of hidden units in a layers
+    - :math:`\\epsilon`: the small value added to the variance to prevent division by zero.
+    - :math:`g`: the trainable scale parameter.
+    - :math:`b`: the trainable bias parameter.
+    Parameters:
+        normalized_shape(int|list|tuple): Input shape from an expected input of
+            size :math:`[*, normalized_shape[0], normalized_shape[1], ..., normalized_shape[-1]]`.
+            If it is a single integer, this module will normalize over the last dimension
+            which is expected to be of that specific size.
+        epsilon(float, optional): The small value added to the variance to prevent
+            division by zero. Default: 1e-05.
+        weight_attr(ParamAttr|bool, optional): The parameter attribute for the learnable
+            gain :math:`g`. If False, weight is None. If is None, a default :code:`ParamAttr` would be added as scale. The
+            :attr:`param_attr` is initialized as 1 if it is added. Default: None.
+        bias_attr(ParamAttr|bool, optional): The parameter attribute for the learnable
+            bias :math:`b`. If is False, bias is None. If is None, a default :code:`ParamAttr` would be added as bias. The
+            :attr:`bias_attr` is initialized as 0 if it is added. Default: None.
+        name(str, optional): Name for the LayerNorm, default is None. For more information, please refer to :ref:`api_guide_Name`..
+    Shape:
+        - x: 2-D, 3-D, 4-D or 5-D tensor.
+        - output: same shape as input x.
+    Returns:
+        None
+    Examples:
+        .. code-block:: python
+          import paddle
+          import numpy as np
+          np.random.seed(123)
+          x_data = np.random.random(size=(2, 2, 2, 3)).astype('float32')
+          x = paddle.to_tensor(x_data)
+          layer_norm = paddle.nn.LayerNorm(x_data.shape[1:])
+          layer_norm_out = layer_norm(x)
+          print(layer_norm_out)
+    """
+
+    def __init__(self,
+                 normalized_shape,
+                 epsilon=1e-05,
+                 weight_attr=None,
+                 bias_attr=None,
+                 name=None):
+        super(LayerNorm, self).__init__()
+        if isinstance(normalized_shape, numbers.Integral):
+            normalized_shape = [normalized_shape]
+
+        self._normalized_shape = list(normalized_shape)
+        self._epsilon = epsilon
+        self._weight_attr = weight_attr
+        self._bias_attr = bias_attr
+        param_shape = [np.prod(self._normalized_shape)]
+
+        if weight_attr is False:
+            self.weight = None
+        else:
+            self.weight = self.create_parameter(
+                attr=self._weight_attr,
+                shape=param_shape,
+                default_initializer=Constant(1.0))
+
+        if bias_attr is False:
+            self.bias = None
+        else:
+            self.bias = self.create_parameter(
+                attr=self._bias_attr, shape=param_shape, is_bias=True)
+
+    def forward(self, input):
+        return layer_norm(
+            input,
+            normalized_shape=self._normalized_shape,
+            weight=self.weight,
+            bias=self.bias,
+            epsilon=self._epsilon)
+
+    def extra_repr(self):
+        return 'normalized_shape={}, epsilon={}'.format(self._normalized_shape,
+                                                        self._epsilon)
+
+
+
+class _BatchNormBase(layers.Layer):
+    """
+    BatchNorm base .
+    """
+
+    def __init__(self,
+                 num_features,
+                 momentum=0.9,
+                 epsilon=1e-05,
+                 weight_attr=None,
+                 bias_attr=None,
+                 data_format='NCHW',
+                 use_global_stats=None,
+                 name=None):
+        super(_BatchNormBase, self).__init__()
+        self._num_features = num_features
+        self._weight_attr = weight_attr
+        self._bias_attr = bias_attr
+        self._use_global_stats = use_global_stats
+
+        if get_default_dtype() == 'float16':
+            set_default_dtype('float32')
+
+        param_shape = [num_features]
+
+        # create parameter
+        if weight_attr == False:
+            self.weight = self.create_parameter(
+                attr=None, shape=param_shape, default_initializer=Constant(1.0))
+            self.weight.stop_gradient = True
+        else:
+            self.weight = self.create_parameter(
+                attr=self._weight_attr,
+                shape=param_shape,
+                default_initializer=Constant(1.0))
+            self.weight.stop_gradient = self._weight_attr != None and self._weight_attr.learning_rate == 0.
+
+        if bias_attr == False:
+            self.bias = self.create_parameter(
+                attr=None,
+                shape=param_shape,
+                default_initializer=Constant(0.0),
+                is_bias=True)
+            self.bias.stop_gradient = True
+        else:
+            self.bias = self.create_parameter(
+                attr=self._bias_attr, shape=param_shape, is_bias=True)
+            self.bias.stop_gradient = self._bias_attr != None and self._bias_attr.learning_rate == 0.
+
+        moving_mean_name = None
+        moving_variance_name = None
+
+        if name is not None:
+            moving_mean_name = name + "_mean"
+            moving_variance_name = name + "_variance"
+
+        self._mean = self.create_parameter(
+            attr=ParamAttr(
+                name=moving_mean_name,
+                initializer=Constant(0.0),
+                trainable=False,
+                do_model_average=True),
+            shape=param_shape)
+        self._mean.stop_gradient = True
+
+        self._variance = self.create_parameter(
+            attr=ParamAttr(
+                name=moving_variance_name,
+                initializer=Constant(1.0),
+                trainable=False,
+                do_model_average=True),
+            shape=param_shape)
+        self._variance.stop_gradient = True
+
+        self._data_format = data_format
+        self._in_place = False
+        self._momentum = momentum
+        self._epsilon = epsilon
+        self._fuse_with_relu = False
+        self._name = name
+
+    def _check_input_dim(self, input):
+        raise NotImplementedError("BatchNorm Base error")
+
+    def _check_data_format(self, input):
+        raise NotImplementedError("BatchNorm Base data format error")
+
+    def forward(self, input):
+
+        self._check_data_format(self._data_format)
+
+        self._check_input_dim(input)
+
+        if self.training:
+            warnings.warn(
+                "When training, we now always track global mean and variance.")
+
+        return batch_norm(
+            input,
+            self._mean,
+            self._variance,
+            weight=self.weight,
+            bias=self.bias,
+            training=self.training,
+            momentum=self._momentum,
+            epsilon=self._epsilon,
+            data_format=self._data_format,
+            use_global_stats=self._use_global_stats)
+
+    def extra_repr(self):
+        main_str = 'num_features={}, momentum={}, epsilon={}'.format(
+            self._num_features, self._momentum, self._epsilon)
+        if self._data_format is not 'NCHW':
+            main_str += ', data_format={}'.format(self._data_format)
+        if self._name is not None:
+            main_str += ', name={}'.format(self._name)
+        return main_str
+
+
+class BatchNorm1d(_BatchNormBase):
+    r"""
+    Applies Batch Normalization over a 2D or 3D input (a mini-batch of 1D inputswith additional channel dimension) as described in the paper Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift .
+    When use_global_stats = False, the :math:`\\mu_{\\beta}`
+    and :math:`\\sigma_{\\beta}^{2}` are the statistics of one mini-batch.
+    Calculated as follows:
+    ..  math::
+        \\mu_{\\beta} &\\gets \\frac{1}{m} \\sum_{i=1}^{m} x_i \\qquad &//\\
+        \ mini-batch\ mean \\\\
+        \\sigma_{\\beta}^{2} &\\gets \\frac{1}{m} \\sum_{i=1}^{m}(x_i - \\
+        \\mu_{\\beta})^2 \\qquad &//\ mini-batch\ variance \\\\
+    When use_global_stats = True, the :math:`\\mu_{\\beta}`
+    and :math:`\\sigma_{\\beta}^{2}` are not the statistics of one mini-batch.
+    They are global or running statistics (moving_mean and moving_variance). It usually got from the
+    pre-trained model. Calculated as follows:
+    .. math::
+        moving\_mean = moving\_mean * momentum + \mu_{\beta} * (1. - momentum) \quad &// global mean \\
+        moving\_variance = moving\_variance * momentum + \sigma_{\beta}^{2} * (1. - momentum) \quad &// global variance \\
+    The normalization function formula is as follows:
+    ..  math::
+        \\hat{x_i} &\\gets \\frac{x_i - \\mu_\\beta} {\\sqrt{\\
+        \\sigma_{\\beta}^{2} + \\epsilon}} \\qquad &//\ normalize \\\\
+        y_i &\\gets \\gamma \\hat{x_i} + \\beta \\qquad &//\ scale\ and\ shift
+    - :math:`\\epsilon` : add a smaller value to the variance to prevent division by zero
+    - :math:`\\gamma` : trainable proportional parameter
+    - :math:`\\beta` : trainable deviation parameter
+    Parameters:
+        num_features(int): Indicate the number of channels of the input ``Tensor``.
+        epsilon(float, optional): The small value added to the variance to prevent division by zero. Default: 1e-5.
+        momentum(float, optional): The value used for the moving_mean and moving_var computation. Default: 0.9.
+        weight_attr(ParamAttr|bool, optional): The parameter attribute for Parameter `scale`
+            of batch_norm. If it is set to None or one attribute of ParamAttr, batch_norm
+            will create ParamAttr as weight_attr. If it is set to Fasle, the weight is not learnable.
+            If the Initializer of the weight_attr is not set, the parameter is initialized with Xavier. Default: None.
+        bias_attr(ParamAttr|bool, optional): The parameter attribute for the bias of batch_norm.
+            If it is set to None or one attribute of ParamAttr, batch_norm
+            will create ParamAttr as bias_attr. If it is set to Fasle, the weight is not learnable.
+            If the Initializer of the bias_attr is not set, the bias is initialized zero. Default: None.
+        data_format(str, optional): Specify the input data format, may be "NC", "NCL" or "NLC". Defalut "NCL".
+        use_global_stats(bool|None, optional): Whether to use global mean and variance. If set to False, use the statistics of one mini-batch, if set to True, use the global statistics, if set to None, use global statistics in the test phase and use the statistics of one mini-batch in the training phase. Default: None.
+        name(str, optional): Name for the BatchNorm, default is None. For more information, please refer to :ref:`api_guide_Name`..
+    Shape:
+        - x: 2-D or 3-D tensor with shape: (batch, num_features) or (batch, num_features, length) when data_format is "NC" or "NCL",
+            (batch, length, num_features) when data_format is "NLC".
+        - output: 3-D tensor with same shape as input x.
+    Returns:
+        None.
+
+    Examples:
+        .. code-block:: python
+          import paddle
+          import numpy as np
+          np.random.seed(123)
+          x_data = np.random.random(size=(2, 1, 3)).astype('float32')
+          x = paddle.to_tensor(x_data)
+          batch_norm = paddle.nn.BatchNorm1D(1)
+          batch_norm_out = batch_norm(x)
+          print(batch_norm_out)
+    """
+
+    def _check_data_format(self, input):
+        if input == 'NCHW' or input == 'NC' or input == 'NCL':
+            self._data_format = 'NCHW'
+        elif input == "NHWC" or input == 'NLC':
+            self._data_format = "NHWC"
+        else:
+            raise ValueError(
+                'expected NC , NCL, NLC or None for data_format input')
+
+    def _check_input_dim(self, input):
+        if len(input.shape) != 2 and len(input.shape) != 3:
+            raise ValueError('expected 2D or 3D input (got {}D input)'.format(
+                len(input.shape)))
+
+
+class BatchNorm2d(_BatchNormBase):
+    r"""
+    Applies Batch Normalization over a 4D input (a mini-batch of 2D inputswith additional channel dimension) as described in the paper Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift .
+    When use_global_stats = False, the :math:`\\mu_{\\beta}`
+    and :math:`\\sigma_{\\beta}^{2}` are the statistics of one mini-batch.
+    Calculated as follows:
+    ..  math::
+        \\mu_{\\beta} &\\gets \\frac{1}{m} \\sum_{i=1}^{m} x_i \\qquad &//\\
+        \ mini-batch\ mean \\\\
+        \\sigma_{\\beta}^{2} &\\gets \\frac{1}{m} \\sum_{i=1}^{m}(x_i - \\
+        \\mu_{\\beta})^2 \\qquad &//\ mini-batch\ variance \\\\
+    When use_global_stats = True, the :math:`\\mu_{\\beta}`
+    and :math:`\\sigma_{\\beta}^{2}` are not the statistics of one mini-batch.
+    They are global or running statistics (moving_mean and moving_variance). It usually got from the
+    pre-trained model. Calculated as follows:
+    .. math::
+        moving\_mean = moving\_mean * momentum + \mu_{\beta} * (1. - momentum) \quad &// global mean \\
+        moving\_variance = moving\_variance * momentum + \sigma_{\beta}^{2} * (1. - momentum) \quad &// global variance \\
+    The normalization function formula is as follows:
+    ..  math::
+        \\hat{x_i} &\\gets \\frac{x_i - \\mu_\\beta} {\\sqrt{\\
+        \\sigma_{\\beta}^{2} + \\epsilon}} \\qquad &//\ normalize \\\\
+        y_i &\\gets \\gamma \\hat{x_i} + \\beta \\qquad &//\ scale\ and\ shift
+    - :math:`\\epsilon` : add a smaller value to the variance to prevent division by zero
+    - :math:`\\gamma` : trainable proportional parameter
+    - :math:`\\beta` : trainable deviation parameter
+    Parameters:
+        num_features(int): Indicate the number of channels of the input ``Tensor``.
+        epsilon(float, optional): The small value added to the variance to prevent division by zero. Default: 1e-5.
+        momentum(float, optional): The value used for the moving_mean and moving_var computation. Default: 0.9.
+        weight_attr(ParamAttr|bool, optional): The parameter attribute for Parameter `scale`
+            of batch_norm. If it is set to None or one attribute of ParamAttr, batch_norm
+            will create ParamAttr as weight_attr. If it is set to Fasle, the weight is not learnable.
+            If the Initializer of the weight_attr is not set, the parameter is initialized with Xavier. Default: None.
+        bias_attr(ParamAttr|bool, optional): The parameter attribute for the bias of batch_norm.
+            If it is set to None or one attribute of ParamAttr, batch_norm
+            will create ParamAttr as bias_attr. If it is set to Fasle, the weight is not learnable.
+            If the Initializer of the bias_attr is not set, the bias is initialized zero. Default: None.
+        data_format(str, optional): Specify the input data format, the data format can be "NCHW" or "NHWC". Default: NCHW.
+        use_global_stats(bool|None, optional): Whether to use global mean and variance. If set to False, use the statistics of one mini-batch, if set to True, use the global statistics, if set to None, use global statistics in the test phase and use the statistics of one mini-batch in the training phase. Default: None.
+        name(str, optional): Name for the BatchNorm, default is None. For more information, please refer to :ref:`api_guide_Name`..
+    Shape:
+        - x: 4-D tensor with shape: (batch, num_features, height, weight) when data_format is "NCHW",
+            or (batch, height, weight, num_features) when data_format is "NHWC".
+        - output: 4-D tensor with same shape as input x.
+    Returns:
+        None
+    Examples:
+        .. code-block:: python
+          import paddle
+          import numpy as np
+          np.random.seed(123)
+          x_data = np.random.random(size=(2, 1, 2, 3)).astype('float32')
+          x = paddle.to_tensor(x_data)
+          batch_norm = paddle.nn.BatchNorm2D(1)
+          batch_norm_out = batch_norm(x)
+          print(batch_norm_out)
+    """
+
+    def _check_data_format(self, input):
+        if input == 'NCHW':
+            self._data_format = input
+        elif input == "NHWC":
+            self._data_format = input
+        else:
+            raise ValueError('expected NCHW or NHWC for data_format input')
+
+    def _check_input_dim(self, input):
+        if len(input.shape) != 4:
+            raise ValueError('expected 4D input (got {}D input)'.format(
+                len(input.shape)))
+
+
+class BatchNorm3d(_BatchNormBase):
+    r"""
+    Applies Batch Normalization over a 5D input (a mini-batch of 3D inputswith additional channel dimension) as described in the paper Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift .
+    When use_global_stats = False, the :math:`\\mu_{\\beta}`
+    and :math:`\\sigma_{\\beta}^{2}` are the statistics of one mini-batch.
+    Calculated as follows:
+    ..  math::
+        \\mu_{\\beta} &\\gets \\frac{1}{m} \\sum_{i=1}^{m} x_i \\qquad &//\\
+        \ mini-batch\ mean \\\\
+        \\sigma_{\\beta}^{2} &\\gets \\frac{1}{m} \\sum_{i=1}^{m}(x_i - \\
+        \\mu_{\\beta})^2 \\qquad &//\ mini-batch\ variance \\\\
+    When use_global_stats = True, the :math:`\\mu_{\\beta}`
+    and :math:`\\sigma_{\\beta}^{2}` are not the statistics of one mini-batch.
+    They are global or running statistics (moving_mean and moving_variance). It usually got from the
+    pre-trained model. Calculated as follows:
+    .. math::
+        moving\_mean = moving\_mean * momentum + \mu_{\beta} * (1. - momentum) \quad &// global mean \\
+        moving\_variance = moving\_variance * momentum + \sigma_{\beta}^{2} * (1. - momentum) \quad &// global variance \\
+    The normalization function formula is as follows:
+    ..  math::
+        \\hat{x_i} &\\gets \\frac{x_i - \\mu_\\beta} {\\sqrt{\\
+        \\sigma_{\\beta}^{2} + \\epsilon}} \\qquad &//\ normalize \\\\
+        y_i &\\gets \\gamma \\hat{x_i} + \\beta \\qquad &//\ scale\ and\ shift
+    - :math:`\\epsilon` : add a smaller value to the variance to prevent division by zero
+    - :math:`\\gamma` : trainable proportional parameter
+    - :math:`\\beta` : trainable deviation parameter
+    Parameters:
+        num_features(int): Indicate the number of channels of the input ``Tensor``.
+        epsilon(float, optional): The small value added to the variance to prevent division by zero. Default: 1e-5.
+        momentum(float, optional): The value used for the moving_mean and moving_var computation. Default: 0.9.
+        weight_attr(ParamAttr|bool, optional): The parameter attribute for Parameter `scale`
+            of batch_norm. If it is set to None or one attribute of ParamAttr, batch_norm
+            will create ParamAttr as weight_attr. If it is set to Fasle, the weight is not learnable.
+            If the Initializer of the weight_attr is not set, the parameter is initialized with Xavier. Default: None.
+        bias_attr(ParamAttr|bool, optional): The parameter attribute for the bias of batch_norm.
+            If it is set to None or one attribute of ParamAttr, batch_norm
+            will create ParamAttr as bias_attr. If it is set to Fasle, the weight is not learnable.
+            If the Initializer of the bias_attr is not set, the bias is initialized zero. Default: None.
+        data_format(str, optional): Specify the input data format, the data format can be "NCDHW" or "NDHWC. Default: NCDHW.
+        use_global_stats(bool|None, optional): Whether to use global mean and variance. If set to False, use the statistics of one mini-batch, if set to True, use the global statistics, if set to None, use global statistics in the test phase and use the statistics of one mini-batch in the training phase. Default: None.
+        name(str, optional): Name for the BatchNorm, default is None. For more information, please refer to :ref:`api_guide_Name`..
+    Shape:
+        - x: 5-D tensor with shape: (batch, num_features, dims, height, weight) when data_format is "NCDHW",
+            or (batch, dims, height, weight, num_features) when data_format is "NDHWC".
+        - output: 5-D tensor with same shape as input x.
+    Returns:
+        None
+    Examples:
+        .. code-block:: python
+          import paddle
+          import numpy as np
+          np.random.seed(123)
+          x_data = np.random.random(size=(2, 1, 2, 2, 3)).astype('float32')
+          x = paddle.to_tensor(x_data)
+          batch_norm = paddle.nn.BatchNorm3D(1)
+          batch_norm_out = batch_norm(x)
+          print(batch_norm_out)
+    """
+
+    def _check_data_format(self, input):
+        if input == 'NCHW' or input == 'NCDHW':
+            self._data_format = 'NCHW'
+        elif input == "NHWC" or input == "NDHWC":
+            self._data_format = 'NHWC'
+        else:
+            raise ValueError(
+                'expected NCDHW, NDHWC or None for data_format input')
+
+    def _check_input_dim(self, input):
+        if len(input.shape) != 5:
+            raise ValueError('expected 5D input (got {}D input)'.format(
+                len(input.shape)))
+
+
+class Softplus(layers.Layer):
+    r"""
+    Softplus Activation
+    .. math::
+        Softplus(x) = \\frac{1}{beta} * \\log(1 + e^{beta * x}) \\\\
+        \\text{For numerical stability, the implementation reverts to the linear function when: beta * x > threshold.}
+    Parameters:
+        beta (float, optional): The value of beta for Softplus. Default is 1
+        threshold (float, optional): The value of threshold for Softplus. Default is 20
+        name (str, optional): Name for the operation (optional, default is None).
+            For more information, please refer to :ref:`api_guide_Name`.
+    Shape:
+        - input: Tensor with any shape.
+        - output: Tensor with the same shape as input.
+    Examples:
+        .. code-block:: python
+            import paddle
+            import numpy as np
+            x = paddle.to_tensor(np.array([-0.4, -0.2, 0.1, 0.3]))
+            m = paddle.nn.Softplus()
+            out = m(x) # [0.513015, 0.598139, 0.744397, 0.854355]
+    """
+
+    def __init__(self, beta=1, threshold=20, name=None):
+        super(Softplus, self).__init__()
+        self._beta = beta
+        self._threshold = threshold
+        self._name = name
+
+    def forward(self, x):
+        return F.softplus(x, self._beta, self._threshold, self._name)
+
+    def extra_repr(self):
+        name_str = ', name={}'.format(self._name) if self._name else ''
+        return 'beta={}, threshold={}{}'.format(self._beta, self._threshold,
+                                                name_str)
+
+class Sigmoid(layers.Layer):
+    """
+    this interface is used to construct a callable object of the ``Sigmoid`` class. This layer calcluate the `sigmoid` of input x.
+    .. math::
+        Sigmoid(x) = \\frac{1}{1 + e^{-x}}
+    Parameters:
+        name (str, optional): Name for the operation (optional, default is None). For more information, please refer to :ref:`api_guide_Name`.
+    Shape:
+        x: N-D tensor, available dtype is float16, float32, float64.
+    Returns:
+        A callable object of Sigmoid.
+    Examples:
+        .. code-block:: python
+          import paddle
+          m = paddle.nn.Sigmoid()
+          x = paddle.to_tensor([1.0, 2.0, 3.0, 4.0])
+          out = m(x) # [0.7310586, 0.880797, 0.95257413, 0.98201376]
+    """
+
+    def __init__(self, name=None):
+        super(Sigmoid, self).__init__()
+        self.name = name
+
+    def forward(self, x):
+        return F.sigmoid(x, self.name)
+
+    def extra_repr(self):
+        name_str = 'name={}'.format(self.name) if self.name else ''
+        return name_str
