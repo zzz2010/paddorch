@@ -3,7 +3,7 @@ import paddorch
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import svds, eigs
 class Tensor(object):
-    def __init__(self,indices,values,size,use_row_split=False):
+    def __init__(self,indices,values,size,use_row_split=False,use_svd=False):
         ##make sure the row sorted order
         if use_row_split:
             order_ind=paddle.argsort(indices[0])
@@ -27,17 +27,17 @@ class Tensor(object):
             self.row_end.append(ii+1)
         else:
             self.values=values
-            self.indices= indices
+            self.indices= indices.long()
         self.indices.stop_gradient = True
         self.shape=size
         self.device=None
-
-        sp_matrix=coo_matrix((self.values.numpy(), (self.indices[0].numpy(), self.indices[1].numpy())), shape=self.shape)
-        u, s, vt = svds(sp_matrix, k=min(50,min(self.shape)-1))
-        self.svd_left=paddorch.Tensor(u*s.reshape(1,-1))
-        self.svd_left.stop_gradient=True
-        self.svd_right = paddorch.Tensor(vt)
-        self.svd_right.stop_gradient = True
+        if use_svd:
+            sp_matrix=coo_matrix((self.values.numpy(), (self.indices[0].numpy(), self.indices[1].numpy())), shape=self.shape)
+            u, s, vt = svds(sp_matrix, k=min(50,min(self.shape)-1))
+            self.svd_left=paddorch.Tensor(u*s.reshape(1,-1))
+            self.svd_left.stop_gradient=True
+            self.svd_right = paddorch.Tensor(vt)
+            self.svd_right.stop_gradient = True
 
 
 
@@ -124,7 +124,8 @@ def mm(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,fast=False )
         return  mm_fast(sparseX,denseY)
     else:
         # return  mm_backwardcorrect(sparseX,denseY)
-        return (mm_svd(sparseX, denseY)+mm_fast(sparseX,denseY))/2
+        return mm_backwardcorrect_sparse_embed(sparseX, denseY)
+        # return (mm_svd(sparseX, denseY)+mm_fast(sparseX,denseY))/2
 
 #new mm
 def mm_splitrows(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase,maxsize=557573 ): #55757376
@@ -154,6 +155,13 @@ def mm_svd(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
     A=paddorch.mm(sparseX.svd_right,denseY)
     return paddorch.mm(sparseX.svd_left,A)
 
+
+def mm_backwardcorrect_sparse_embed(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
+    update_inds=sparseX.indices[0]
+    updates= paddle.nn.functional.embedding(sparseX.indices[1],denseY,sparse=False)* sparseX.values.view(-1,1)
+    ret_Mat2=paddle.scatter_nd( paddle.reshape(update_inds,(-1,1)) ,updates,(sparseX.shape[0],denseY.shape[1]))
+
+    return ret_Mat2
 
 def mm_backwardcorrect(sparseX:FloatTensor,denseY:paddle.fluid.dygraph.core.VarBase ):
 

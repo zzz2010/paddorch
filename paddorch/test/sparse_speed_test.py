@@ -67,6 +67,7 @@ with fluid.dygraph.guard(place=place):
     b_param=paddorch.nn.Parameter(b)
     b.stop_gradient=False
     a.values.stop_gradient=False
+
     import time
     before=time.time()
     for _ in range(6):
