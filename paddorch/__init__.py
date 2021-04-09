@@ -11,16 +11,20 @@ import numpy as np
 from paddorch.tensor import varbase_to_tensor,Tensor,convertTensor
 from . import optim
 from . import  vision
+from . import utils
+from . import sparse
 
 double="float32"
 bool="bool"
 
-def chunk(self , chunks , dim ):
-    slices= paddle.unstack(self, axis=dim, num=None)
-    out_list=[]
-    step=int(np.ceil(len(slices)/chunks))
-    for st in range(0,len(slices),step):
-        out_list.append(varbase_to_tensor(fluid.layers.concat( [paddle.unsqueeze(x, dim, name=None) for x in slices[st:(st+step)] ], axis=dim, name=None)))
+def chunk(self, chunks, dim):
+    slices = paddle.unstack(self, axis=dim, num=None)
+    out_list = []
+    step = int(np.ceil(len(slices) / chunks))
+    for st in range(0, len(slices), step):
+        out_list.append(varbase_to_tensor(
+            fluid.layers.concat([paddle.unsqueeze(x, dim, name=None) for x in slices[st:(st + step)]], axis=dim,
+                                name=None)))
     return out_list
 
 def trace(x, offset=0, dim1=0, dim2=1, out=None):
