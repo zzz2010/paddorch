@@ -35,7 +35,7 @@ from paddle.nn.functional import batch_norm, layer_norm, instance_norm
 
 import warnings
 from paddle.nn import functional as F
-
+from paddle.nn import LogSigmoid
 
 def clone_layer(layer):
     new_obj=Layer()
