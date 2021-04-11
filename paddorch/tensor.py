@@ -10,7 +10,7 @@ import paddorch.nn.init
 import paddorch as torch
 from paddle.fluid import dygraph
 import numpy as np
-
+from typing import   Iterable
 def varbase_to_tensor(x):
     return convertTensor(x)
 
@@ -36,7 +36,10 @@ class Tensor(paddle.Tensor):
             super(Tensor, self).__init__( args[0].dtype,args[0].shape,args[0].name,dygraph.core.VarDesc.VarType.LOD_TENSOR, True)
 
             fluid.layers.assign(args[0],self)
-
+        elif isinstance(args[0],Iterable):
+            args=list(args)
+            args[0]=np.array(args[0]).astype("float32")
+            super(Tensor, self).__init__(*args, **kwargs)
         else:
             super(Tensor, self).__init__(*args, **kwargs)
             # self=self #dygraph.core.VarBase(*args, **kwargs)
@@ -66,6 +69,8 @@ class Tensor(paddle.Tensor):
         return torch.max(self,dim=dim,keepdim=keepdim)
 
     def new_full(self, size, fill_value, dtype=None, device=None, requires_grad=False):
+        if dtype is not None:
+            dtype=dtype.replace("fp","float")
         return new_full( size, fill_value, dtype,requires_grad)
 
     def _fill_(self, val):
@@ -206,7 +211,10 @@ class Tensor(paddle.Tensor):
     def flip(self,dim):
         return torch.flip(self,dim)
     def view(self,*size):
-        x= fluid.layers.reshape(self,size)
+        if len(size)==1:
+            if isinstance(size[0],Iterable):
+                size=size[0]
+        x= paddle.reshape(self,size)
 
         return varbase_to_tensor(x)
 
@@ -241,6 +249,37 @@ class Tensor(paddle.Tensor):
             size=size[0]
         return self.view(*size)
 
+    def __setitem__(self, key, value):
+
+        def convert_key_to_inttensor(key):
+            if isinstance(key, np.ndarray):
+                # print(max(args),min(args),self.shape,len(args),len(set(args)) )
+                key=paddorch.from_numpy(key).long()
+                # print("converted numpy", type(args))
+            if  isinstance(key,paddle.Tensor):
+                if key.dtype==paddle.fluid.core.VarDesc.VarType.BOOL:
+                    key = paddle.masked_select(paddle.arange(len(key)), key)
+                elif key.dtype==paddle.fluid.core.VarDesc.VarType.INT32 or key.dtype==paddle.fluid.core.VarDesc.VarType.INT64:
+                    return key
+                else:
+                    return key.astype("int64")
+            return key
+
+        if isinstance(key, np.ndarray) or isinstance(key,paddle.Tensor):
+            key = convert_key_to_inttensor(key)
+        elif isinstance(key,Iterable) :
+            key2=[]
+            for i in range(len(key)):
+                key2.append(convert_key_to_inttensor(key[i]))
+            key=paddle.stack(key2,axis=1)
+            if len(key2)==1:
+                key= key.reshape([-1])
+
+        else:
+            key=convert_key_to_inttensor(key)
+        return paddle.scatter_(self,key,value)
+
+
     def __getitem__(self,args):
         from typing import   Iterable
 
@@ -262,3 +301,9 @@ class Tensor(paddle.Tensor):
 
 
         return convertTensor(super(Tensor, self).__getitem__(args))
+
+    def index_copy_(self,dim, index, tensor):
+        return paddorch.index_copy_(self,dim, index, tensor)
+
+    def index_copy(self,dim, index, tensor):
+        return paddorch.index_copy(self,dim, index, tensor)

@@ -1,5 +1,6 @@
 import paddle.fluid as fluid
-import paddle.static.Variable as Variable
+from paddle.fluid.framework import   Variable
+from paddle.fluid.dygraph.layers import Layer as Function
 
 
 def grad(outputs, inputs, grad_outputs=None,retain_graph=False,

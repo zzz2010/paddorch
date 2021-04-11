@@ -4,6 +4,7 @@ from . import cuda
 from . import  nn
 from . import sparse
 import os
+from. import autograd
 import paddorch.nn.functional
 import paddorch.nn.init
 from paddle.fluid import dygraph
@@ -14,8 +15,11 @@ from . import  vision
 from . import utils
 from . import sparse
 
+__version__='0.0.6'
+
 double="float32"
 bool="bool"
+float="float32"
 
 def chunk(self, chunks, dim):
     slices = paddle.unstack(self, axis=dim, num=None)
@@ -63,7 +67,7 @@ def tensor(x,dtype=np.float32):
     if isinstance(x,list):
         x=paddle.to_tensor(x,dtype=dtype,stop_gradient=True)
     if isinstance(x,int) or isinstance(x,np.int64):
-        return zeros(x)
+        return Tensor([x])
     return Tensor(x)
 
 def FloatTensor(x):
@@ -220,10 +224,10 @@ def cat(tensors, dim=0, out=None):
         return out
 
 
-def ones(*size, out=None, dtype="float32",device=None):
+def ones(size, out=None, dtype="float32",device=None):
     return varbase_to_tensor(paddle.ones(size,dtype))
 
-def zeros(*size, out=None, dtype="float32",device=None,requires_grad=True):
+def zeros(size, out=None, dtype="float32",device=None,requires_grad=True):
     X= varbase_to_tensor(paddle.zeros(size,dtype))
     if not requires_grad:
         X.stop_gradient=True
@@ -320,8 +324,8 @@ def lerp(input, end, weight, out=None):
         paddle.assign(x,out)
         return out
 
-def flatten(x,dim=1):
-    x=paddle.flatten(x ,axis=dim)
+def flatten(x,start_dim=0, end_dim=-1):
+    x=paddle.flatten(x ,start_axis=start_dim,stop_axis=end_dim)
     return varbase_to_tensor(x)
 
 def clamp(input, min, max, out=None) :
@@ -398,7 +402,7 @@ def exp(x):
 
 
 def index_select(x, dim, index):
-    return paddle.index_select(x, index, axis=dim)
+    return convertTensor(paddle.index_select(x, index.astype("int64"), axis=dim))
 
 
 def unqueeze(x, dim):
@@ -434,7 +438,7 @@ def relu(x):
 
 
 def softmax(x, dim=-1):
-    return paddle.fluid.layers.softmax(input, use_cudnn=False, name=None, axis=dim)
+    return paddle.nn.functional.softmax(x,axis=dim)
 
 
 def diag(x):
@@ -457,3 +461,18 @@ def assign(x, output=None):
 
 def expand(x, shape):
     return paddle.expand(x, shape)
+
+
+def index_copy_(x,dim, index, tensor):
+    query_key=[]
+    for k in range(dim):
+        query_key.append(None)
+    query_key.append(index)
+    x[tuple(query_key)]=tensor
+    return x
+
+
+def index_copy(x:paddorch.Tensor,dim, index, tensor):
+    x2=x.clone()
+    index_copy_(x2, dim, index, tensor)
+    return x2
