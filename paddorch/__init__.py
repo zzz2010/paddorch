@@ -59,7 +59,7 @@ def split(x,batch_size,dim=0):
 
 
 def empty(*size):
-    return zeros(*size)
+    return zeros(size)
 
 def matmul(x,y):
     return Tensor(paddle.matmul(x,y ))
