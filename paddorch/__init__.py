@@ -15,7 +15,7 @@ from . import  vision
 from . import utils
 from . import sparse
 
-__version__='0.0.6'
+__version__='0.0.7'
 
 double="float32"
 bool="bool"
