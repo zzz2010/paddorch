@@ -65,7 +65,8 @@ def linear(input, weight, bias=None):
     return torch.Tensor(layer_obj(input))
 
 def normalize(input, p=2, dim=1, eps=1e-12, out=None):
-    return torch.Tensor(fluid.layers.l2_normalize(input,axis=dim,epsilon=eps))
+    return torch.convertTensor( input/paddle.norm(input,p,axis=dim,keepdim=True))
+    # return torch.Tensor(fluid.layers.l2_normalize(input,axis=dim,epsilon=eps))
 def sigmoid(x):
     return torch.Tensor(fluid.layers.sigmoid(x))
 

@@ -14,7 +14,7 @@ from . import optim
 from . import  vision
 from . import utils
 from . import sparse
-
+from paddle import argmax,argsort,argmin
 __version__='0.0.7'
 
 double="float32"
@@ -61,8 +61,9 @@ def split(x,batch_size,dim=0):
 def empty(*size):
     return zeros(size)
 
-def matmul(x,y):
-    return Tensor(paddle.matmul(x,y ))
+def matmul(x,y,transpose_y=False):
+    return convertTensor(paddle.matmul(x,y,transpose_y=transpose_y ))
+
 def tensor(x,dtype=np.float32):
     if isinstance(x,list):
         x=paddle.to_tensor(x,dtype=dtype,stop_gradient=True)
@@ -381,12 +382,9 @@ def sigmoid(x):
 def tanh(x):
     return convertTensor(fluid.layers.tanh(x))
 
-def transpose(x,*perm):
-    return x.transpose(*perm)
+def transpose(x,dim0,dim1):
+    return x.transpose([dim0,dim1])
 
-
-def transpose(x, *perm):
-    return x.transpose(*perm)
 
 
 def unique(x):
