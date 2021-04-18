@@ -474,3 +474,9 @@ def index_copy(x:paddorch.Tensor,dim, index, tensor):
     x2=x.clone()
     index_copy_(x2, dim, index, tensor)
     return x2
+
+def div(x,y):
+    return x/y
+
+def fmod(x,y):
+    return  convertTensor(paddle.floor_mod(x,y))

@@ -19,3 +19,7 @@ def manual_seed(seed):
 
 def set_device(device):
     return paddle.set_device(device)
+
+
+def empty_cache():
+    return
