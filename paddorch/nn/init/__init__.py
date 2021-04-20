@@ -17,16 +17,21 @@ def normal_(x,m=0,std=1):
     # fluid.layers.assign(np.random.randn(*x.shape).astype(np.float32)*std+m,x)
     return x
 
-#TODO find the right implementation
-def kaiming_normal_(x,nonlinearity=None):
-    ##didnt know how to implement correctly, use normal as  placeholder
-    x= normal_(x)
-    if nonlinearity is not None:
-        if nonlinearity =="relu":
-            x=paddorch.nn.functional.relu(x)
-        if nonlinearity =="tanh":
-            x=paddorch.nn.functional.tanh(x)
-    return x
+def _calculate_correct_fan(x, mode):
+    mode = mode.lower()
+    valid_modes = ['fan_in', 'fan_out']
+    if mode not in valid_modes:
+        raise ValueError("Mode {} not supported, please use one of {}".format(mode, valid_modes))
+
+    fan_in, fan_out = _calculate_fan_in_and_fan_out(x)
+    return fan_in if mode == 'fan_in' else fan_out
+
+def kaiming_normal_(x,a=0,  mode='fan_in',nonlinearity='leaky_relu'):
+    fan = _calculate_correct_fan(x, mode)
+    gain = calculate_gain(nonlinearity, a)
+    std = gain / math.sqrt(fan)
+    with paddle.no_grad():
+        return x.normal_(0, std)
 
 #TODO find the right implementation
 def xavier_normal_(tensor, gain=1.0):
