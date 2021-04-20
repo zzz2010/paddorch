@@ -68,8 +68,8 @@ def tensor(x,dtype=np.float32):
     if isinstance(x,list):
         x=paddle.to_tensor(x,dtype=dtype,stop_gradient=True)
     if isinstance(x,int) or isinstance(x,np.int64):
-        return Tensor([x])
-    return Tensor(x)
+        return Tensor([x]).astype(dtype)
+    return Tensor(x).astype(dtype)
 
 def FloatTensor(x):
     if isinstance(x,int):
@@ -415,12 +415,12 @@ def uniform_(shape, low, high):
     return paddle.uniform(shape, dtype='float32', min=low, max=high, seed=0)
 
 
-def full(shape, fill_value, dtype, device):
+def full(shape, fill_value, dtype="float32", device="cpu"):
     return paddle.full(shape, fill_value, dtype=dtype, name=device)
 
 
 def nonzero(x):
-    return paddle.nonzero(x, as_tuple=False)
+    return convertTensor(paddle.nonzero(x, as_tuple=True)[0])
 
 
 def sort(x, axis=1, descending=False):
@@ -428,19 +428,19 @@ def sort(x, axis=1, descending=False):
 
 
 def randperm(n):
-    return paddle.randperm(n, dtype='int64', name=None)
+    return convertTensor(paddle.randperm(n, dtype='int64', name=None))
 
 
 def relu(x):
-    return paddle.fluid.layers.relu(x)
+    return convertTensor(paddle.fluid.layers.relu(x))
 
 
 def softmax(x, dim=-1):
-    return paddle.nn.functional.softmax(x,axis=dim)
+    return convertTensor(paddle.nn.functional.softmax(x,axis=dim))
 
 
 def diag(x):
-    return paddle.diag(x, offset=0, padding_value=0, name=None)
+    return convertTensor(paddle.diag(x, offset=0, padding_value=0, name=None))
 
 
 def sparse_coo_tensor(indices, data, shape):
