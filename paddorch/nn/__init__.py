@@ -66,7 +66,7 @@ def forward_pre_hook(layer,input):
 class Module(Layer):
     def __init__(self , name_scope=None, dtype=core.VarDesc.VarType.FP32):
         super(Module, self).__init__(name_scope,dtype)
-        self.register_buffer=dict()
+        # self.register_buffer=dict()
 
         self.register_forward_post_hook(forward_post_hook)
         self.register_forward_pre_hook(forward_pre_hook)
@@ -81,6 +81,11 @@ class Module(Layer):
         self.__setattr__(name,Parameter(value))
 
     def register_buffer(self,name,value):
+        if value is None   : ##do the deletion
+            self.__setattr__(name, paddle.Tensor(np.zeros(1)))
+            # if hasattr(self,name):
+            #     delattr(self,name)
+            return
         X=Parameter(value)
         X.stop_gradient=True
         self.__setattr__(name,X)

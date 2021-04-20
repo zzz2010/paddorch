@@ -6,6 +6,7 @@ import paddorch.nn.functional
 import math
 
 
+
 def constant_(x, val):
     x=fluid.layers.fill_constant(x.shape,x.dtype,val,out=x)
     return x
@@ -16,6 +17,7 @@ def normal_(x,m=0,std=1):
     # fluid.layers.assign(np.random.randn(*x.shape).astype(np.float32)*std+m,x)
     return x
 
+#TODO find the right implementation
 def kaiming_normal_(x,nonlinearity=None):
     ##didnt know how to implement correctly, use normal as  placeholder
     x= normal_(x)
@@ -25,6 +27,10 @@ def kaiming_normal_(x,nonlinearity=None):
         if nonlinearity =="tanh":
             x=paddorch.nn.functional.tanh(x)
     return x
+
+#TODO find the right implementation
+def xavier_normal_(tensor, gain=1.0):
+    return kaiming_normal_(tensor)*gain
 
 def constant_(x,val):
     y=fluid.layers.zeros(x.shape,"float32")+val

@@ -71,7 +71,9 @@ def tensor(x,dtype=np.float32):
         return Tensor([x]).astype(dtype)
     return Tensor(x).astype(dtype)
 
-def FloatTensor(x):
+def FloatTensor(x=None,size=None):
+    if size is not None:
+        return zeros(size)
     if isinstance(x,int):
         return zeros(x)
     return tensor(x)
@@ -224,11 +226,18 @@ def cat(tensors, dim=0, out=None):
         paddle.assign(x,out)
         return out
 
-
-def ones(size, out=None, dtype="float32",device=None):
+from collections.abc import Iterable
+def ones(*size, out=None, dtype="float32",device=None):
+    if isinstance(size[0],Iterable):
+        size=size[0]
     return varbase_to_tensor(paddle.ones(size,dtype))
 
-def zeros(size, out=None, dtype="float32",device=None,requires_grad=True):
+
+def zeros(*size, out=None, dtype="float32",device=None,requires_grad=True):
+    if isinstance(size[0],Iterable):
+        size=size[0]
+        if isinstance(size[0], Iterable):
+            size = size[0]
     X= varbase_to_tensor(paddle.zeros(size,dtype))
     if not requires_grad:
         X.stop_gradient=True
