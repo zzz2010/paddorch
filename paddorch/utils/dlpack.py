@@ -1,6 +1,7 @@
 from paddle import  fluid
 import numpy as np
 import paddorch
+import paddle
 
 def to_lodtensor(data, place):
   # 存储Tensor的长度作为LoD信息
@@ -11,14 +12,14 @@ def to_lodtensor(data, place):
       cur_len += l
       lod.append(cur_len)
   # 对待转换的 Tensor 降维
-  if data.shape[0]>0:
-    flattened_data = np.concatenate(data, axis=0).astype("int64")
-  else:
-    flattened_data=data
-  flattened_data = flattened_data.reshape([len(flattened_data)])
+  # if data.shape[0]>0:
+  #   flattened_data = paddorch.cat(data, dim=0).astype("int64")
+  # else:
+  flattened_data=paddorch.convertTensor(data)
+  flattened_data = flattened_data.view(-1)
   # 为 Tensor 数据添加lod信息
   res = fluid.LoDTensor( )
-  res.set(flattened_data, place)
+  res.set(flattened_data.numpy(), place,zero_copy=False)
   res.set_lod([lod])
   return res
 
@@ -34,8 +35,18 @@ def LodTensor_to_Tensor(lod_tensor):
   return new_array
 
 def to_dlpack(tensor):
-    tensor = to_lodtensor(tensor,fluid.CPUPlace())
-    dltensor = tensor._to_dlpack()
+    # tensor = to_lodtensor(tensor,fluid.CPUPlace())
+    # p = fluid.core.Place()
+    # p.set_place(paddle.CPUPlace())
+    # dltensor = tensor._copy(p)._to_dlpack()
+    import nnabla as nn ##pip install nnabla==1.18.0
+    from nnabla.utils.dlpack import to_dlpack
+    from nnabla.ext_utils import get_extension_context
+    ctx = get_extension_context('cpu')
+    nn.set_default_context(ctx)
+    a = nn.NdArray.from_numpy_array(tensor.numpy() )
+    return to_dlpack(a)
+
     return dltensor
 
 def from_dlpack(dlpack):

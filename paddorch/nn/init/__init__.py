@@ -31,7 +31,7 @@ def kaiming_normal_(x,a=0,  mode='fan_in',nonlinearity='leaky_relu'):
     gain = calculate_gain(nonlinearity, a)
     std = gain / math.sqrt(fan)
     with paddle.no_grad():
-        return x.normal_(0, std)
+        return normal_(x,0, std)
 
 #TODO find the right implementation
 def xavier_normal_(tensor, gain=1.0):
