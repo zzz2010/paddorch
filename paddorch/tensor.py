@@ -309,4 +309,4 @@ class Tensor(paddle.Tensor):
         return paddorch.index_copy(self,dim, index, tensor)
 
     def new_empty(self,size, dtype=None, device=None, requires_grad=False):
-        return paddorch.empty(size)
+        return paddorch.empty(size).astype(dtype)

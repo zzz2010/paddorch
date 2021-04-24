@@ -82,7 +82,7 @@ class Module(Layer):
 
     def register_buffer(self,name,value):
         if value is None   : ##do the deletion
-            self.__setattr__(name, paddle.Tensor(np.zeros(1)))
+            self.__setattr__(name, None)
             # if hasattr(self,name):
             #     delattr(self,name)
             return

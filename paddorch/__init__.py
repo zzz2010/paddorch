@@ -68,8 +68,8 @@ def tensor(x,dtype=np.float32):
     if isinstance(x,list):
         x=paddle.to_tensor(x,dtype=dtype,stop_gradient=True)
     if isinstance(x,int) or isinstance(x,np.int64):
-        return Tensor([x]).astype(dtype)
-    return Tensor(x).astype(dtype)
+        return convertTensor(Tensor([x]).astype(dtype))
+    return convertTensor(Tensor(x).astype(dtype))
 
 def FloatTensor(x=None,size=None):
     if size is not None:
@@ -397,15 +397,15 @@ def transpose(x,dim0,dim1):
 
 
 def unique(x):
-    return paddle.unique(x)
+    return convertTensor(paddle.unique(x))
 
 
 def argsort(x, dim=-1, descending=False):
-    return paddle.argsort(x, axis=dim, descending=descending)
+    return convertTensor(paddle.argsort(x, axis=dim, descending=descending))
 
 
 def exp(x):
-    return paddle.exp(x)
+    return convertTensor(paddle.exp(x))
 
 
 def index_select(x, dim, index):
@@ -413,19 +413,19 @@ def index_select(x, dim, index):
 
 
 def unqueeze(x, dim):
-    return paddle.unsqueeze(x, axis=dim)
+    return convertTensor(paddle.unsqueeze(x, axis=dim))
 
 
 def reshape(x, shape):
-    return paddle.reshape(x, shape)
+    return convertTensor(paddle.reshape(x, shape))
 
 
 def uniform_(shape, low, high):
-    return paddle.uniform(shape, dtype='float32', min=low, max=high, seed=0)
+    return convertTensor(paddle.uniform(shape, dtype='float32', min=low, max=high, seed=0))
 
 
 def full(shape, fill_value, dtype="float32", device="cpu"):
-    return paddle.full(shape, fill_value, dtype=dtype, name=device)
+    return convertTensor(paddle.full(shape, fill_value, dtype=dtype, name=device))
 
 
 def nonzero(x):
@@ -433,7 +433,7 @@ def nonzero(x):
 
 
 def sort(x, axis=1, descending=False):
-    return paddle.sort(x, axis=axis, descending=descending, name=None)
+    return convertTensor(paddle.sort(x, axis=axis, descending=descending, name=None))
 
 
 def randperm(n):
@@ -458,7 +458,6 @@ def sparse_coo_tensor(indices, data, shape):
 
 
 def to_dense(x):
-    pass
     return x
 
 

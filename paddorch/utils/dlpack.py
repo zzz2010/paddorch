@@ -47,10 +47,12 @@ def to_dlpack(tensor):
     a = nn.NdArray.from_numpy_array(tensor.numpy() )
     return to_dlpack(a)
 
-    return dltensor
 
 def from_dlpack(dlpack):
     tensor_from_dlpack = fluid.core.from_dlpack(dlpack)
-    return paddorch.Tensor(np.array(tensor_from_dlpack)).astype("int64")
+    if "int64" in str(tensor_from_dlpack):
+        return paddorch.convertTensor(paddorch.Tensor(np.array(tensor_from_dlpack)).astype("int64"))
+    else:
+        return paddorch.Tensor(np.array(tensor_from_dlpack))
 
 
