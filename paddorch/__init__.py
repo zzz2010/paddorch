@@ -62,6 +62,8 @@ def empty(*size):
     return zeros(size)
 
 def matmul(x,y,transpose_y=False):
+    if isinstance(x,paddorch.sparse.FloatTensor):
+        return paddorch.sparse.mm(x,y)
     return convertTensor(paddle.matmul(x,y,transpose_y=transpose_y ))
 
 def tensor(x,dtype=np.float32):
@@ -292,7 +294,7 @@ def zeros_like(x, out=None,device=None):
     return varbase_to_tensor(paddle.zeros_like(x,out))
 
 def randn(*shape, requires_grad=True):
-    X= varbase_to_tensor(paddle.randn(*shape))
+    X= varbase_to_tensor(paddle.randn(shape))
     if not requires_grad:
         X.stop_gradient=True
     return X
@@ -488,3 +490,10 @@ def div(x,y):
 
 def fmod(x,y):
     return  convertTensor(paddle.floor_mod(x,y))
+
+
+def  allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
+    return convertTensor(paddle.allclose(input, other, rtol , atol , equal_nan ))
+
+def clamp(x, min=None, max=None):
+    return convertTensor(paddle.clip(x,min=min,max=max))

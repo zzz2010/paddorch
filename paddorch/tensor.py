@@ -40,6 +40,8 @@ class Tensor(paddle.Tensor):
             args=list(args)
             args[0]=np.array(args[0]).astype("float32")
             super(Tensor, self).__init__(*args, **kwargs)
+        elif isinstance(args[0],int):
+            super(Tensor, self).__init__(np.zeros(args).astype("float32") )
         else:
             super(Tensor, self).__init__(*args, **kwargs)
             # self=self #dygraph.core.VarBase(*args, **kwargs)
@@ -302,6 +304,8 @@ class Tensor(paddle.Tensor):
 
         return convertTensor(super(Tensor, self).__getitem__(args))
 
+
+
     def index_copy_(self,dim, index, tensor):
         return paddorch.index_copy_(self,dim, index, tensor)
 
@@ -310,3 +314,39 @@ class Tensor(paddle.Tensor):
 
     def new_empty(self,size, dtype=None, device=None, requires_grad=False):
         return paddorch.empty(size).astype(dtype)
+
+    def view_as(self,Y):
+        return self.view(*Y.shape)
+
+    def clamp(self,*args,**kwargs):
+        return paddorch.clamp(self,*args,**kwargs)
+
+    def requires_grad_(self):
+        self.stop_gradient=False
+        return self
+
+    def  backward(self, grad_tensors=None,retain_graph=False):
+        def set_grad(grad):
+            return grad_tensors
+        if grad_tensors is not None:
+            try:##only work in the dev version
+                helper=self.register_hook(set_grad)
+            except:
+                pass
+
+        ret = super(Tensor, self).backward(retain_graph=retain_graph)
+        if grad_tensors is not None:
+            try:  ##only work in the dev version
+                helper.remove()
+            except:
+                pass
+        return ret
+
+    @property
+    def grad(self):
+        if super(Tensor, self).grad is None:
+            return None
+        return convertTensor(super(Tensor, self).grad)
+
+    def detach(self):
+        return convertTensor(super(Tensor, self).detach() )
