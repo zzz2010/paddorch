@@ -2,13 +2,21 @@ import paddle.fluid as fluid
 from paddle.fluid.framework import   Variable
 from paddle.fluid.dygraph.layers import Layer
 from paddle.fluid import core
+from collections import defaultdict
 import paddle
 # mypy doesn't understand `with_metaclass` from torch._six
 class Function(Layer):  # type: ignore
     def __init__(self , name_scope=None, dtype=core.VarDesc.VarType.FP32):
         super(Function, self).__init__(name_scope,dtype)
         self.saved_tensors=[]
+        self.grad_cache=defaultdict(lambda :0)
 
+    def register_hook(self,var,name):
+        def set_grad(grad):
+            if name not in self.grad_cache:
+                return grad
+            return self.grad_cache[name]
+        var.register_hook(set_grad)
     @classmethod
     def apply(cls, *args,**kwargs):
         function_inst=cls()

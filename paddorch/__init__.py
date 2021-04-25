@@ -431,7 +431,7 @@ def full(shape, fill_value, dtype="float32", device="cpu"):
 
 
 def nonzero(x):
-    return convertTensor(paddle.nonzero(x, as_tuple=True)[0])
+    return  paddle.nonzero(x, as_tuple=True)[0][0].numpy()
 
 
 def sort(x, axis=1, descending=False):

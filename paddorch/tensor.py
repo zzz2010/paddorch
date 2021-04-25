@@ -136,7 +136,7 @@ class Tensor(paddle.Tensor):
         return len(self.shape)
 
     def clone(self):
-        y = self.new_full(self.shape, 0,dtype=str(self.dtype).replace("VarType.","").lower().replace("fp32","float32") )
+        y = self.new_full(self.shape, 0,dtype=str(self.dtype).replace("VarType.","").lower().replace("paddle.","").replace("fp32","float32") )
         fluid.layers.assign(self, y)
         return y
 
@@ -325,17 +325,27 @@ class Tensor(paddle.Tensor):
         self.stop_gradient=False
         return self
 
-    def  backward(self, grad_tensors=None,retain_graph=False):
+    def set_gradient(self, gradient=None):
         def set_grad(grad):
-            return grad_tensors
-        if grad_tensors is not None:
+            return gradient
+        if gradient is not None:
+            try:##only work in the dev version
+                helper=self.register_hook(set_grad)
+            except:
+                pass
+
+    def  backward(self, gradient=None, retain_graph=False):
+        def set_grad(grad):
+            print("set_grad",gradient)
+            return gradient
+        if gradient is not None:
             try:##only work in the dev version
                 helper=self.register_hook(set_grad)
             except:
                 pass
 
         ret = super(Tensor, self).backward(retain_graph=retain_graph)
-        if grad_tensors is not None:
+        if gradient is not None:
             try:  ##only work in the dev version
                 helper.remove()
             except:
