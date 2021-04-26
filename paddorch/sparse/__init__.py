@@ -9,7 +9,7 @@ class Tensor(object):
         self.indices= indices.long()
         self.indices.stop_gradient = True
         self.shape=size
-        self.device=None
+        self.device=values.device
 
 
 

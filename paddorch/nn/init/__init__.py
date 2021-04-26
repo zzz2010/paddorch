@@ -1,5 +1,7 @@
 import paddle.fluid as fluid
 import paddle
+import torch.nn.init
+
 import paddorch.cuda
 import paddorch.nn
 import paddorch.nn.functional
@@ -73,7 +75,10 @@ def xavier_uniform_(x, gain=1.):
         x: an n-dimensional `paddle.Tensor`
         gain: an optional scaling factor
     """
-    fan_in, fan_out = _calculate_fan_in_and_fan_out(x)
+    if len(x.shape)==1:
+        fan_in, fan_out =x.shape[0],1
+    else:
+        fan_in, fan_out = _calculate_fan_in_and_fan_out(x)
     std = gain * math.sqrt(2.0 / float(fan_in + fan_out))
     a = math.sqrt(3.0) * std  # Calculate uniform bounds from standard deviation
 

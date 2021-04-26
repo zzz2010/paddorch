@@ -114,6 +114,10 @@ class Module(Layer):
         return self
 
 
+    def reset_parameters(self):
+        for pp in self.parameters():
+            paddorch.nn.init.xavier_uniform_(pp )
+
 
 def DataParallel(model):
     return fluid.dygraph.DataParallel(model)

@@ -48,6 +48,10 @@ def mm(x,y):
     return matmul(x,y)
 
 def narrow(x, dim, start, length):
+    if start<0:
+        start=x.shape[dim]+start
+    if dim<0:
+        dim=len(x.shape)+dim
     return  paddle.slice(x,[dim],[start],[start+length] )
 
 def squeeze(x,axes=[-1]):
@@ -83,10 +87,10 @@ def FloatTensor(x=None,size=None):
 def abs(x):
     return paddle.abs(x)
 def max(x,dim=None,keepdim=False):
-    return varbase_to_tensor(fluid.layers.reduce_max(x,dim,keep_dim= keepdim ))
+    return varbase_to_tensor(paddle.max(x,dim,keepdim= keepdim ))
 
 def min(x,dim=None,keepdim=False):
-    return varbase_to_tensor(fluid.layers.reduce_min(x,dim,keep_dim= keepdim ))
+    return varbase_to_tensor(paddle.max(x,dim,keepdim= keepdim ))
 
 def full_like(x,fill_value):
     return Tensor.new_full(x,x.shape,fill_value)
@@ -205,7 +209,7 @@ def stack(inputs,dim=0,out=None):
         paddle.assign(x,out)
         return out
 def arange(*args,**kwargs):
-    return Tensor(np.arange(*args,**kwargs).astype("int32"))
+    return paddorch.Tensor(np.arange(*args,**kwargs).astype("int32"))
     # if end==0:
     #     return []
     # return varbase_to_tensor(paddle.paddle.range(0, end, step, dtype))
@@ -493,6 +497,9 @@ def fmod(x,y):
 
 
 def  allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
+    if input.shape!=other.shape:
+        other=paddle.expand_as(other,input)
+
     return convertTensor(paddle.allclose(input, other, rtol , atol , equal_nan ))
 
 def clamp(x, min=None, max=None):

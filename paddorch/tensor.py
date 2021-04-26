@@ -46,7 +46,7 @@ class Tensor(paddle.Tensor):
             super(Tensor, self).__init__(*args, **kwargs)
             # self=self #dygraph.core.VarBase(*args, **kwargs)
 
-        self.device=None
+        self.device=str(self.place)
         # self.block=self.block
         # self.dtype=self.dtype
         # self.name=self.name
@@ -73,7 +73,22 @@ class Tensor(paddle.Tensor):
     def new_full(self, size, fill_value, dtype=None, device=None, requires_grad=False):
         if dtype is not None:
             dtype=dtype.replace("fp","float")
+        else:
+            dtype=self.dtype
         return new_full( size, fill_value, dtype,requires_grad)
+
+    def new(self,*size):
+        return new_full(size,0)
+
+    def scatter_add_(self, dim,index, updates ):
+        assert  dim==0, "scatter_add_, no support dim>0"
+        if len(index.shape)==1:
+            paddle.scatter_(self, index , updates.astype("float32"), overwrite=False)
+        else:
+            for ii in range(index.shape[1]):
+                paddle.scatter_(self,index[:,ii],updates.astype("float32"),overwrite=False)
+
+        return self
 
     def _fill_(self, val):
         fluid.layers.fill_constant(self.shape,self.dtype,val,out=self)  #assign(self.new_full(self.shape,val),self)
@@ -138,6 +153,7 @@ class Tensor(paddle.Tensor):
     def clone(self):
         y = self.new_full(self.shape, 0,dtype=str(self.dtype).replace("VarType.","").lower().replace("paddle.","").replace("fp32","float32") )
         fluid.layers.assign(self, y)
+        y.stop_gradient=self.stop_gradient
         return y
 
     def clamp_(self,min,max):
@@ -337,7 +353,8 @@ class Tensor(paddle.Tensor):
     def  backward(self, gradient=None, retain_graph=False):
         def set_grad(grad):
             print("set_grad",gradient)
-            return gradient
+            grad.set_value(gradient)
+            return grad
         if gradient is not None:
             try:##only work in the dev version
                 helper=self.register_hook(set_grad)
@@ -345,6 +362,7 @@ class Tensor(paddle.Tensor):
                 pass
 
         ret = super(Tensor, self).backward(retain_graph=retain_graph)
+
         if gradient is not None:
             try:  ##only work in the dev version
                 helper.remove()
@@ -360,3 +378,10 @@ class Tensor(paddle.Tensor):
 
     def detach(self):
         return convertTensor(super(Tensor, self).detach() )
+
+    def new_zeros(self,*size):
+        return paddorch.zeros(*size,dtype=self.dtype)
+
+    def sort(self,dim=-1, descending=False):
+        order= paddorch.argsort(self[:,dim], descending=descending)
+        return  self[order],order

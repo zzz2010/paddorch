@@ -13,9 +13,9 @@ class Function(Layer):  # type: ignore
 
     def register_hook(self,var,name):
         def set_grad(grad):
-            if name not in self.grad_cache:
-                return grad
-            return self.grad_cache[name]
+            if name   in self.grad_cache:
+                grad.set_value(self.grad_cache[name])
+            return grad
         var.register_hook(set_grad)
     @classmethod
     def apply(cls, *args,**kwargs):
