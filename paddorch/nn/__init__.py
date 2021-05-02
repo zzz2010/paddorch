@@ -32,7 +32,8 @@ from paddle.fluid.data_feeder import check_variable_and_dtype, check_type
 from paddle.fluid import core, dygraph_utils
 
 from paddle.nn.functional import batch_norm, layer_norm, instance_norm
-
+from paddle.nn import Sequential
+from collections import OrderedDict as ModuleDict
 import warnings
 from paddle.nn import functional as F
 from paddle.nn import LogSigmoid,CrossEntropyLoss
@@ -557,71 +558,6 @@ class ModuleList(dygraph.LayerList):
 
 
 
-class Sequential(Layer):
-    """Sequential container.
-    Sub layers will be added to this container in the order of argument in the constructor.
-    The argument passed to the constructor can be iterable Layers or iterable name Layer pairs.
-    Parameters:
-        *layers(tuple): Layers or iterable name Layer pairs.
-    Examples:
-        .. code-block:: python
-            import paddle
-            import numpy as np
-            data = np.random.uniform(-1, 1, [30, 10]).astype('float32')
-            data = paddle.to_tensor(data)
-            # create Sequential with iterable Layers
-            model1 = paddle.nn.Sequential(
-                paddle.nn.Linear(10, 1), paddle.nn.Linear(1, 2)
-            )
-            model1[0]  # access the first layer
-            res1 = model1(data)  # sequential execution
-            # create Sequential with name Layer pairs
-            model2 = paddle.nn.Sequential(
-                ('l1', paddle.nn.Linear(10, 2)),
-                ('l2', paddle.nn.Linear(2, 3))
-            )
-            model2['l1']  # access l1 layer
-            model2.add_sublayer('l3', paddle.nn.Linear(3, 3))  # add sublayer
-            res2 = model2(data)  # sequential execution
-    """
-
-    def __init__(self, *layers):
-        super(Sequential, self).__init__()
-        if len(layers) > 0 and isinstance(layers[0], tuple):
-            for name, layer in layers:
-                self.add_sublayer(name, layer)
-        else:
-            for idx, layer in enumerate(layers):
-                self.add_sublayer(str(idx), layer)
-
-    def __getitem__(self, name):
-        if isinstance(name, slice):
-            return self.__class__(*(list(self._sub_layers.values())[name]))
-        else:
-            if name >= len(self._sub_layers):
-                raise IndexError('index {} is out of range'.format(name))
-            elif name < 0 and name >= -len(self._sub_layers):
-                name += len(self._sub_layers)
-            elif name < -len(self._sub_layers):
-                raise IndexError('index {} is out of range'.format(name))
-            return self._sub_layers[str(name)]
-
-    def __setitem__(self, name, layer):
-        assert isinstance(layer, Layer)
-        setattr(self, str(name), layer)
-
-    def __delitem__(self, name):
-        name = str(name)
-        assert name in self._sub_layers
-        del self._sub_layers[name]
-
-    def __len__(self):
-        return len(self._sub_layers)
-
-    def forward(self, input):
-        for layer in self._sub_layers.values():
-            input = layer(input)
-        return input
 
 
 class ConstantPad2d(Module):
@@ -822,7 +758,7 @@ def concat_states(states, bidirectional=False, state_components=1):
         return tuple([paddle.stack(item) for item in componnets])
 
 
-class RNNCellBase(Layer):
+class RNNCellBase(Module):
     r"""
     RNNCellBase is the base class for abstraction representing the calculations
     mapping the input and state to the output and new state. It is suitable to
@@ -945,7 +881,7 @@ class RNNCellBase(Layer):
             "Please add implementaion for `state_dtype` in the used cell.")
 
 
-class GRUCell(RNNCellBase):
+class GRUCell( Module):
     r"""
     Gated Recurrent Unit (GRU) RNN cell. Given the inputs and previous states,
     it computes the outputs and updates states.
@@ -1003,14 +939,21 @@ class GRUCell(RNNCellBase):
             #[4,32]
     """
 
-    def __init__(self,
-                 input_size,
-                 hidden_size,
-                 weight_ih_attr=None,
-                 weight_hh_attr=None,
-                 bias_ih_attr=None,
-                 bias_hh_attr=None,
-                 name=None):
+    def __init__(self,input_size, hidden_size, bias=True):
+        # (
+        #          input_size,
+        #          hidden_size,
+        #          weight_ih_attr=None,
+        #          weight_hh_attr=None,
+        #          bias_ih_attr=None,
+        #          bias_hh_attr=None,
+        #          name=None):
+        weight_ih_attr = None
+        weight_hh_attr = None
+        if bias:
+            bias_ih_attr,bias_hh_attr = None,None
+        else:
+            bias_ih_attr, bias_hh_attr = False, False
         super(GRUCell, self).__init__()
         std = 1.0 / math.sqrt(hidden_size)
         self.weight_ih = self.create_parameter(
@@ -1057,7 +1000,7 @@ class GRUCell(RNNCellBase):
         c = self._activation(x_c + r * h_c)  # apply reset gate after mm
         h = (pre_hidden - c) * z + c
 
-        return h, h
+        return h
 
     @property
     def state_shape(self):
@@ -1071,7 +1014,7 @@ class GRUCell(RNNCellBase):
     def extra_repr(self):
         return '{input_size}, {hidden_size}'.format(**self.__dict__)
 
-class LayerNorm(layers.Layer):
+class LayerNorm(Module ):
     r"""
     :alias_main: paddle.nn.LayerNorm
 	:alias: paddle.nn.LayerNorm,paddle.nn.layer.LayerNorm,paddle.nn.layer.norm.LayerNorm
@@ -1165,7 +1108,7 @@ class LayerNorm(layers.Layer):
 
 
 
-class _BatchNormBase(layers.Layer):
+class _BatchNormBase(Module, paddle.nn.BatchNorm):
     """
     BatchNorm base .
     """
@@ -1506,7 +1449,7 @@ class BatchNorm3d(_BatchNormBase):
                 len(input.shape)))
 
 
-class Softplus(layers.Layer):
+class Softplus(paddle.nn.Softplus,Module):
     r"""
     Softplus Activation
     .. math::
@@ -1543,7 +1486,7 @@ class Softplus(layers.Layer):
         return 'beta={}, threshold={}{}'.format(self._beta, self._threshold,
                                                 name_str)
 
-class Sigmoid(layers.Layer):
+class Sigmoid(paddle.nn.Sigmoid,Module):
     """
     this interface is used to construct a callable object of the ``Sigmoid`` class. This layer calcluate the `sigmoid` of input x.
     .. math::

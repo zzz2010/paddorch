@@ -38,7 +38,10 @@ class Tensor(paddle.Tensor):
             fluid.layers.assign(args[0],self)
         elif isinstance(args[0],Iterable):
             args=list(args)
-            args[0]=np.array(args[0]).astype("float32")
+            if isinstance(args[0][0],int):
+                args[0] = np.array(args[0]).astype("int64")
+            else:
+                args[0]=np.array(args[0]).astype("float32")
             super(Tensor, self).__init__(*args, **kwargs)
         elif isinstance(args[0],int):
             super(Tensor, self).__init__(np.zeros(args).astype("float32") )
@@ -237,14 +240,16 @@ class Tensor(paddle.Tensor):
         return varbase_to_tensor(x)
 
     def repeat(self,*size):
-
-        x=paddle.tile(self,size)
-        return convertTensor(x)
+        return paddorch.repeat(self,*size)
+        # x=paddle.tile(self,size)
+        # return convertTensor(x)
 
 
     def add(self,x):
         return convertTensor(self+x)
 
+    def __mod__(self, other):
+        return convertTensor(super(Tensor, self). __mod__(other))
     def __add__(self, other):
         return convertTensor(super(Tensor, self).__add__(other) )
     def __sub__(self, other):
@@ -252,6 +257,9 @@ class Tensor(paddle.Tensor):
 
     def __div__(self, other_var):
         return convertTensor(super(Tensor, self).__div__(other_var))
+
+    def __truediv__(self, other_var):
+        return self.__div__( other_var)
 
     def __mul__(self, other_var):
         return convertTensor(super(Tensor, self).__mul__(other_var))
@@ -281,6 +289,8 @@ class Tensor(paddle.Tensor):
                     return key
                 else:
                     return key.astype("int64")
+            if isinstance(key,int):
+                return paddorch.LongTensor(np.array([key]))
             return key
 
         if isinstance(key, np.ndarray) or isinstance(key,paddle.Tensor):
@@ -371,6 +381,16 @@ class Tensor(paddle.Tensor):
         return ret
 
     @property
+    def shape(self):
+        shape=super(Tensor, self).shape
+        if isinstance(shape,int):
+            return tuple(shape)
+        if isinstance(shape[0],Iterable):
+            shape=shape[0]
+        return tuple( shape)
+
+
+    @property
     def grad(self):
         if super(Tensor, self).grad is None:
             return None
@@ -381,7 +401,24 @@ class Tensor(paddle.Tensor):
 
     def new_zeros(self,*size):
         return paddorch.zeros(*size,dtype=self.dtype)
+    def new_ones(self,*size):
+        return paddorch.ones(*size,dtype=self.dtype)
+
 
     def sort(self,dim=-1, descending=False):
         order= paddorch.argsort(self[:,dim], descending=descending)
         return  self[order],order
+
+
+    def index_select(self,dim, index):
+        index=index.astype("int64")
+
+        ret= convertTensor(paddle.index_select(self,index=index, axis=dim))
+        return  ret
+
+    def masked_fill_(self, mask,value):
+        mask=paddle.expand_as(mask,self)
+        new_values=paddle.where(mask,self,paddle.ones(self.shape)*value)
+        fluid.layers.assign(new_values, self)
+        return self
+

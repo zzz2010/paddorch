@@ -39,7 +39,9 @@ def from_numpy(x):
 def bmm(x,y):
     return Tensor(paddle.bmm(x,y))
 
-def eye(n , m ):
+def eye(n , m=None ):
+    if m is None:
+        m=n
     return Tensor(paddle.eye(n,m))
 
 def dot(x,y):
@@ -78,10 +80,13 @@ def tensor(x,dtype=np.float32):
     return convertTensor(Tensor(x).astype(dtype))
 
 def FloatTensor(x=None,size=None):
-    if size is not None:
+    if x is None and size is not None:
         return zeros(size)
     if isinstance(x,int):
-        return zeros(x)
+        if isinstance(size,int):
+            return zeros((x,size))
+        else:
+            return zeros(x)
     return tensor(x)
 
 def abs(x):
@@ -127,15 +132,9 @@ def take(x,indices):
 def linspace(start, stop, num, dtype="float32"):
     return Tensor(fluid.layers.linspace(start, stop, num, dtype))
 
-def randint(low, high, size ,
+def randint(low, high, size=[1] ,
             dtype="int64", requires_grad=False):
-    return Tensor(paddle.randint(low,
-                                 high=high,
-                                 shape=size,
-                                 out=None,
-                                 dtype=dtype,
-                                 device=None,
-                                 stop_gradient=not requires_grad))
+    return Tensor(paddle.randint(low=low, high=high, shape= size, dtype=dtype, name=None))
 
 def rand(shape):
     if isinstance(shape,int):
@@ -298,6 +297,8 @@ def zeros_like(x, out=None,device=None):
     return varbase_to_tensor(paddle.zeros_like(x,out))
 
 def randn(*shape, requires_grad=True):
+    if isinstance(shape[0],Iterable):
+        shape=shape[0]
     X= varbase_to_tensor(paddle.randn(shape))
     if not requires_grad:
         X.stop_gradient=True
@@ -504,3 +505,21 @@ def  allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
 
 def clamp(x, min=None, max=None):
     return convertTensor(paddle.clip(x,min=min,max=max))
+
+
+def einsum(equation, *operands):
+    return convertTensor(np.einsum(equation,*[x.numpy() for x in operands]))
+
+
+def repeat(x, *size):
+    if isinstance(size[0], Iterable):
+        size = size[0]
+    x = paddle.tile(x, size)
+    return convertTensor(x)
+
+def rot90(input, k=1, dims=[1,0]):
+    assert k==1, "no implement for k>1"
+    return paddle.transpose(input,dims)[::-1]
+
+def cos(x):
+    return convertTensor(paddle.cos(x))
