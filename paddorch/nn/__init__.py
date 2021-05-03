@@ -18,7 +18,7 @@ from paddle import framework
 
 from paddle.nn import initializer as I
 from paddle.fluid.dygraph import Layer, LayerList
-from paddle.fluid.layers import utils
+# from paddle.fluid.layers import utils
 from paddle.fluid.layers.utils import map_structure, flatten, pack_sequence_as
 import six
 
@@ -82,6 +82,7 @@ class Module(Layer):
         self.__setattr__(name,Parameter(value))
 
     def register_buffer(self,name,value):
+        '''state dict will record this value, but no training on it'''
         if value is None   : ##do the deletion
             self.__setattr__(name, None)
             # if hasattr(self,name):
