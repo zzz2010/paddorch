@@ -1,7 +1,7 @@
 import paddle.fluid as fluid
 from paddle.fluid.initializer import NumpyArrayInitializer
 import paddorch as torch
-from paddle.nn.functional import softplus,pad
+from paddle.nn.functional import softplus
 import paddle
 
 def avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
@@ -152,3 +152,13 @@ def cosine_similarity(x1, x2):
 
 def log_softmax(x, dim):
     return paddle.nn.functional.log_softmax(x, axis=dim, dtype=None, name=None)
+
+
+def pad(input, pad, mode='constant', value=0):
+    pad2=[]
+    for _ in range(len(input.shape)*2-len(pad)):
+        pad2.append(0)
+    if isinstance(pad, tuple):
+        pad=list(pad)
+    pad2=pad2+pad
+    return paddle.nn.functional.pad(input,pad2,mode=mode,value=value)

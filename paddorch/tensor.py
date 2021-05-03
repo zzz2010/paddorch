@@ -198,19 +198,29 @@ class Tensor(paddle.Tensor):
     def mul(self,x):
         return varbase_to_tensor(self*x)
 
+    def mul_(self,x):
+        y= self.mul(x)
+        self.copy_(y)
+        return  self
+
+    def add_(self,x):
+        y= self.add(x)
+        self.copy_(y)
+        return  self
+
     def permute(self,*perm):
         x=paddle.transpose(self,perm)
 
         return varbase_to_tensor(x)
 
     def transpose(self,*perm):
-        if len(perm)==2 and len(self.shape)>2:
-            ###only swap two axis
-            perm2=list(range(len(self.shape)))
-            a=perm2[perm[0]]
-            perm2[perm[0]]=perm[1]
-            perm2[perm[1]] =a
-            perm=perm2
+        # if len(perm)==2 and len(self.shape)>2:
+        ###only swap two axis
+        perm2=list(range(len(self.shape)))
+        a=perm2[perm[0]]
+        perm2[perm[0]]=perm[1]
+        perm2[perm[1]] =a
+        perm=perm2
         return self.permute(*perm)
 
     def cpu(self,*args, **kwargs):
@@ -276,6 +286,11 @@ class Tensor(paddle.Tensor):
         return self.view(*size)
 
     def __setitem__(self, key, value):
+        if isinstance(key,tuple):
+            if len(key)==2:
+                return super(Tensor,self).__setitem__(key,value)
+        if   isinstance(key,int):
+            return super(Tensor, self).__setitem__(key, value)
 
         def convert_key_to_inttensor(key):
             if isinstance(key, np.ndarray):
@@ -291,6 +306,8 @@ class Tensor(paddle.Tensor):
                     return key.astype("int64")
             if isinstance(key,int):
                 return paddorch.LongTensor(np.array([key]))
+            if isinstance(key,list):
+                key = paddorch.from_numpy(key).long()
             return key
 
         if isinstance(key, np.ndarray) or isinstance(key,paddle.Tensor):
@@ -299,7 +316,9 @@ class Tensor(paddle.Tensor):
             key2=[]
             for i in range(len(key)):
                 key2.append(convert_key_to_inttensor(key[i]))
+
             key=paddle.stack(key2,axis=1)
+
             if len(key2)==1:
                 key= key.reshape([-1])
 

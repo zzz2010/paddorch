@@ -15,11 +15,12 @@ from . import  vision
 from . import utils
 from . import sparse
 from paddle import argmax,argsort,argmin
-__version__='0.0.7'
+__version__='0.1.7'
 
 double="float32"
 bool="bool"
 float="float32"
+long="int64"
 
 def chunk(self, chunks, dim):
     slices = paddle.unstack(self, axis=dim, num=None)
@@ -136,9 +137,11 @@ def randint(low, high, size=[1] ,
             dtype="int64", requires_grad=False):
     return Tensor(paddle.randint(low=low, high=high, shape= size, dtype=dtype, name=None))
 
-def rand(shape):
+def rand(*shape):
     if isinstance(shape,int):
         shape=[shape]
+    if isinstance(shape[0],Iterable):
+        shape=shape[0]
     return Tensor(paddle.rand(shape))
 
 
@@ -197,8 +200,8 @@ def LongTensor(x):
     if isinstance(x,int):
         return Tensor(paddle.to_tensor([x]))
     if isinstance(x,list):
-        x=paddle.to_tensor(x,dtype="int32")
-    return convertTensor(Tensor(x ).astype("int32"))
+        x=paddle.to_tensor(x,dtype="int64")
+    return convertTensor(Tensor(x ).astype("int64"))
 
 def stack(inputs,dim=0,out=None):
     x= paddle.stack(inputs ,axis=dim )
@@ -208,7 +211,7 @@ def stack(inputs,dim=0,out=None):
         paddle.assign(x,out)
         return out
 def arange(*args,**kwargs):
-    return paddorch.Tensor(np.arange(*args,**kwargs).astype("int32"))
+    return paddorch.Tensor(np.arange(*args,**kwargs).astype("int64"))
     # if end==0:
     #     return []
     # return varbase_to_tensor(paddle.paddle.range(0, end, step, dtype))
@@ -477,23 +480,41 @@ def expand(x, shape):
 
 
 def index_copy_(x,dim, index, tensor):
-    query_key=[]
-    for k in range(dim):
-        query_key.append(None)
-    query_key.append(index)
-    x[tuple(query_key)]=tensor
+    y=index_copy(x , dim, index, tensor)
+    # query_key=[]
+    # for k in range(dim):
+    #     query_key.append(None)
+    # if isinstance(index,Tensor):
+    #     index=index.long()
+    # query_key.append(index)
+    # # x[tuple(query_key)]=tensor
+    #
+    # query_key=paddle.concat(query_key)
+    # y=paddle.scatter(x,query_key,tensor)
+
+    copy(y,x)
     return x
 
 
 def index_copy(x:paddorch.Tensor,dim, index, tensor):
-    x2=x.clone()
-    index_copy_(x2, dim, index, tensor)
-    return x2
+    query_key=[]
+    for k in range(dim):
+        query_key.append(None)
+    if isinstance(index,Tensor):
+        index=index.long()
+    query_key.append(index)
+    # x[tuple(query_key)]=tensor
+
+    query_key=paddle.concat(query_key)
+    y=convertTensor(paddle.scatter(x,query_key,tensor))
+    return y
 
 def div(x,y):
     return x/y
 
 def fmod(x,y):
+    if isinstance(y, int):
+        y=paddle.Tensor(np.array([y],dtype="float32"))
     return  convertTensor(paddle.floor_mod(x,y))
 
 

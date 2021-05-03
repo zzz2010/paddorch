@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="paddorch", # Replace with your own username
-    version="0.1.6",
+    version="0.1.7",
     author="Zhizhuo Zhang",
     author_email="zzz2010@gmail.com",
     description="paddle implementation for pytorch interface",

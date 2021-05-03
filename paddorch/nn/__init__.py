@@ -1108,7 +1108,7 @@ class LayerNorm(Module ):
 
 
 
-class _BatchNormBase(Module, paddle.nn.BatchNorm):
+class _BatchNormBase(Module ):
     """
     BatchNorm base .
     """

@@ -3,6 +3,7 @@ from paddle.fluid.io import  Dataset,BatchSampler
 import numpy as np
 import paddorch
 import paddle
+from . import  graph
 
 def default_collate_fn(batch):
     """
@@ -50,6 +51,7 @@ def DataLoader(dataset ,  batch_size=None ,
 
     if collate_fn is None:
         collate_fn=default_collate_fn
+
     return   fluid.io.DataLoader(dataset=dataset,
                            batch_size=batch_size,
                            shuffle=shuffle,
