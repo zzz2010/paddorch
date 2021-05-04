@@ -96,7 +96,7 @@ def max(x,dim=None,keepdim=False):
     return varbase_to_tensor(paddle.max(x,dim,keepdim= keepdim ))
 
 def min(x,dim=None,keepdim=False):
-    return varbase_to_tensor(paddle.max(x,dim,keepdim= keepdim ))
+    return varbase_to_tensor(paddle.min(x,dim,keepdim= keepdim ))
 
 def full_like(x,fill_value):
     return Tensor.new_full(x,x.shape,fill_value)
@@ -439,7 +439,7 @@ def full(shape, fill_value, dtype="float32", device="cpu"):
 
 
 def nonzero(x):
-    return  paddle.nonzero(x, as_tuple=True)[0][0].numpy()
+    return  paddle.nonzero(x, as_tuple=True)[0]
 
 
 def sort(x, axis=1, descending=False):
