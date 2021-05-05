@@ -76,7 +76,7 @@ class Module(Layer):
         super(Module, self).eval()
         return self
     def load_state_dict(self,new_dict, strict=True):
-        self.set_dict(new_dict, include_sublayers=True, use_structured_name=True)
+        self.set_dict(new_dict,   use_structured_name=True)
 
     def register_parameter(self,name,value):
         self.__setattr__(name,Parameter(value))

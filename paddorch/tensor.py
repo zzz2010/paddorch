@@ -390,14 +390,14 @@ class Tensor(paddle.Tensor):
             except:
                 pass
 
-            ret = super(Tensor, self).backward(retain_graph=retain_graph)
+        ret = super(Tensor, self).backward(retain_graph=retain_graph)
 
         if gradient is not None:
             try:  ##only work in the dev version
                 helper.remove()
             except:
                 pass
-        return
+        return ret
 
     @property
     def shape(self):
