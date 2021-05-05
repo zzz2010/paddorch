@@ -1202,9 +1202,9 @@ class _BatchNormBase(Module ):
 
         self._check_input_dim(input)
 
-        if self.training:
-            warnings.warn(
-                "When training, we now always track global mean and variance.")
+        # if self.training:
+        #     warnings.warn(
+        #         "When training, we now always track global mean and variance.")
 
         return batch_norm(
             input,
