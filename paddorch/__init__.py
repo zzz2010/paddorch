@@ -15,7 +15,7 @@ from . import  vision
 from . import utils
 from . import sparse
 from paddle import argmax,argsort,argmin
-__version__='0.1.7'
+__version__='0.2.0'
 
 double="float32"
 bool="bool"
