@@ -495,6 +495,19 @@ def index_copy_(x,dim, index, tensor):
     copy(y,x)
     return x
 
+def index_copy_inplace_nograd(x,dim, index, tensor):
+
+    query_key=[]
+    for k in range(dim):
+        query_key.append(None)
+    if isinstance(index,Tensor):
+        index=index.long()
+    query_key.append(index)
+    query_key=paddle.concat(query_key)
+    paddle.scatter_(x,query_key,tensor)
+
+    return x
+
 
 def index_copy(x:paddorch.Tensor,dim, index, tensor):
     query_key=[]
