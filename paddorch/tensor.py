@@ -93,6 +93,17 @@ class Tensor(paddle.Tensor):
 
         return self
 
+    def scatter_add(self, dim,index, updates ):
+        assert  dim==0, "scatter_add_, no support dim>0"
+        ret=self
+        if len(index.shape)==1:
+            ret=paddle.scatter(ret, index , updates.astype("float32"), overwrite=False)
+        else:
+            for ii in range(index.shape[1]):
+                ret=paddle.scatter(ret,index[:,ii],updates.astype("float32"),overwrite=False)
+
+        return ret
+
     def _fill_(self, val):
         fluid.layers.fill_constant(self.shape,self.dtype,val,out=self)  #assign(self.new_full(self.shape,val),self)
         return self
@@ -160,7 +171,8 @@ class Tensor(paddle.Tensor):
         return y
 
     def clamp_(self,min,max):
-        self.set_value( fluid.layers.clip(self,float(min),float(max) ) )
+        paddorch.copy(fluid.layers.clip(self,float(min),float(max) ),self)
+        # self.set_value( fluid.layers.clip(self,float(min),float(max) ) )
         return self
 
     def float(self):
@@ -171,7 +183,8 @@ class Tensor(paddle.Tensor):
     def dot(self,x):
         return torch.dot(self,x)
     def add_(self,x):
-        self.set_value(x+self)
+        paddorch.copy(x+self,self)
+        # self.set_value(x+self)
         return self
     def matmul(self,y):
         return torch.matmul(self,y)
@@ -186,11 +199,12 @@ class Tensor(paddle.Tensor):
         return x
 
     def div_(self,x):
-        self.set_value(self/x)
+        # self.set_value(self/x)
+        paddorch.copy(self/x, self)
         return  self
 
     def copy_(self,src):
-        torch.copy(src,self)
+        paddorch.copy(src,self)
         return self
 
     def mm(self,x):

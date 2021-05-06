@@ -263,6 +263,10 @@ class LSTM(paddle.nn.LSTM,Module):
                  bias_hh_attr=bias_attr,
                  name=None)
 
+    def reset_parameters(self) -> None:
+        stdv = 1.0 / math.sqrt(self.hidden_size)
+        for weight in self.parameters():
+            init.uniform_(weight, -stdv, stdv)
 class GRU(paddle.nn.GRU,Module):
 
     '''    Args:

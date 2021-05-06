@@ -26,17 +26,21 @@ class Tensor(object):
         return self
 
     def __add__(self, other):
-        self.values.set_value(self.values+other)
+        paddorch.copy(self.values+other,self.values)
+        # self.values.set_value(self.values+other)
         return  self
 
 
     def __mul__(self, other):
-        self.values.set_value(self.values*other)
+        paddorch.copy(self.values * other, self.values)
+
+        # self.values.set_value(self.values*other)
         return  self
 
 
     def __div__(self, other_var):
-        self.values.set_value(self.values/other_var)
+        paddorch.copy(self.values / other_var, self.values)
+        # self.values.set_value(self.values/other_var)
         return  self
 
 
