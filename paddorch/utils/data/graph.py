@@ -189,7 +189,7 @@ class Dataloader(object):
     def __iter__(self):
         # random seed will be fixed when using multiprocess,
         # so set seed explicitly every time
-        np.random.seed()
+        np.random.seed(0)
         if self.num_workers == 1:
             r = paddle.reader.buffered(_DataLoaderIter(self, 0), self.buf_size)
         else:

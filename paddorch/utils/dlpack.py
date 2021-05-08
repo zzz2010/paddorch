@@ -54,6 +54,7 @@ def to_dlpack(tensor):
 
 def from_dlpack(dlpack):
     tensor_from_dlpack = fluid.core.from_dlpack(dlpack)
+    # return paddorch.Tensor(paddle.fluid.dygraph.to_variable(tensor_from_dlpack))
     if "int64" in str(tensor_from_dlpack):
         return paddorch.convertTensor(paddorch.Tensor(np.array(tensor_from_dlpack)).astype("int64"))
     else:
