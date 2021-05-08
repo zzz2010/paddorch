@@ -29,7 +29,7 @@ def convertTensor(x):
     return  paddorch.Tensor(x)
 
 # class Tensor(dygraph.core.VarBase):
-class Tensor(paddle.Tensor):
+class Tensor(paddle.Tensor  ):
     def __init__(self,*args, **kwargs):
         if isinstance(args[0],dygraph.core.VarBase) or isinstance(args[0],dygraph.core.LoDTensor):
 
@@ -396,7 +396,7 @@ class Tensor(paddle.Tensor):
     def  backward(self, gradient=None, retain_graph=False):
         def set_grad(grad):
             print("set_grad",gradient)
-            grad.set_value(gradient)
+            grad.set_value(gradient+grad)
             return grad
         if gradient is not None:
             try:##only work in the dev version
@@ -428,6 +428,17 @@ class Tensor(paddle.Tensor):
         if super(Tensor, self).grad is None:
             return None
         return convertTensor(super(Tensor, self).grad)
+
+    # def get_tensor(self):
+    #     if self.stop_gradient:
+    #         orig_stop_gradient=self.stop_gradient
+    #         self.stop_gradient=False
+    #         ret=self.float()
+    #         ret= super(Tensor,ret).get_tensor()
+    #         self.stop_gradient =orig_stop_gradient
+    #     else:
+    #         return super(Tensor,self).get_tensor()
+    #     return ret
 
     def detach(self):
         return convertTensor(super(Tensor, self).detach() )

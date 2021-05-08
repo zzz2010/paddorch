@@ -34,6 +34,10 @@ def LodTensor_to_Tensor(lod_tensor):
       new_array.append(array[lod[0][i]:lod[0][i + 1]])
   return new_array
 
+
+# def to_dlpack(tensor):
+#     return  tensor.value().get_tensor()._to_dlpack()
+
 def to_dlpack(tensor):
     # tensor = to_lodtensor(tensor,fluid.CPUPlace())
     # p = fluid.core.Place()
