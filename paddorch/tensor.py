@@ -26,7 +26,9 @@ def new_full(size, fill_value, dtype=None,  requires_grad=False):
 def convertTensor(x):
     if isinstance(x,paddorch.Tensor):
         return x
-    return  paddorch.Tensor(x)
+    ret=  paddorch.Tensor(x)
+    del x
+    return ret
 
 # class Tensor(dygraph.core.VarBase):
 class Tensor(paddle.Tensor  ):
@@ -395,7 +397,6 @@ class Tensor(paddle.Tensor  ):
 
     def  backward(self, gradient=None, retain_graph=False):
         def set_grad(grad):
-            print("set_grad",gradient)
             grad.set_value(gradient+grad)
             return grad
         if gradient is not None:

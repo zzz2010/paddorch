@@ -213,27 +213,13 @@ class InstanceNorm2d(Module):
 #
 class Linear(dygraph.Linear,Module):
     def __init__(self,in_features, out_features, bias=True):
-        uniform_bound=np.sqrt(1/in_features)
+        uniform_bound=np.sqrt(1.0/in_features)
         param_attr=fluid.initializer.UniformInitializer(-uniform_bound,uniform_bound )
         if not bias:
             bias_attr = False
         else:
             bias_attr =fluid.initializer.UniformInitializer(-uniform_bound,uniform_bound )
         super(Linear, self).__init__(in_features, out_features, param_attr=param_attr, bias_attr=bias_attr, act=None, dtype="float32")
-
-
-
-# class Linear(dygraph.Linear,Module):
-#     def __init__(self,in_features, out_features, bias=True):
-#         bias_attr = None
-#         uniform_bound = np.sqrt(1 / in_features)
-#         param_attr = fluid.initializer.UniformInitializer(-uniform_bound, uniform_bound)
-#         if not bias:
-#             bias_attr = False
-#         else:
-#             bias_attr =fluid.initializer.MSRAInitializer() # fluid.initializer.ConstantInitializer(value=0)
-#         super(Linear, self).__init__(in_features, out_features, param_attr=param_attr, bias_attr=bias_attr, act=None, dtype="float32")
-#
 
 
 

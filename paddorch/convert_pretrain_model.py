@@ -24,7 +24,7 @@ def load_pytorch_pretrain_model(paddle_model, pytorch_state_dict):
     print("paddle unique key , checking mis-alignment")
     print(paddle_unique_keys)
     for torch_key, paddle_key in zip(torch_key_list,paddle_key_list):
-        # if "linears_prediction" not in paddle_key or "weight" not in paddle_key:
+        # if "linears_prediction.4" not in paddle_key or "weight" not in paddle_key:
         #     continue
         print(torch_key, paddle_key, pytorch_state_dict[torch_key].shape,paddle_weight[paddle_key].shape)
         if len(pytorch_state_dict[torch_key].shape)==0:
