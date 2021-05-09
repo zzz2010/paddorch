@@ -213,14 +213,27 @@ class InstanceNorm2d(Module):
 #
 class Linear(dygraph.Linear,Module):
     def __init__(self,in_features, out_features, bias=True):
-        bias_attr = None
+        uniform_bound=np.sqrt(1/in_features)
+        param_attr=fluid.initializer.UniformInitializer(-uniform_bound,uniform_bound )
         if not bias:
             bias_attr = False
         else:
-            bias_attr =fluid.initializer.MSRAInitializer() # fluid.initializer.ConstantInitializer(value=0)
-        super(Linear, self).__init__(in_features, out_features, param_attr=fluid.initializer.MSRAInitializer(), bias_attr=bias_attr, act=None, dtype="float32")
+            bias_attr =fluid.initializer.UniformInitializer(-uniform_bound,uniform_bound )
+        super(Linear, self).__init__(in_features, out_features, param_attr=param_attr, bias_attr=bias_attr, act=None, dtype="float32")
 
 
+
+# class Linear(dygraph.Linear,Module):
+#     def __init__(self,in_features, out_features, bias=True):
+#         bias_attr = None
+#         uniform_bound = np.sqrt(1 / in_features)
+#         param_attr = fluid.initializer.UniformInitializer(-uniform_bound, uniform_bound)
+#         if not bias:
+#             bias_attr = False
+#         else:
+#             bias_attr =fluid.initializer.MSRAInitializer() # fluid.initializer.ConstantInitializer(value=0)
+#         super(Linear, self).__init__(in_features, out_features, param_attr=param_attr, bias_attr=bias_attr, act=None, dtype="float32")
+#
 
 
 
@@ -1112,139 +1125,31 @@ class LayerNorm(Module ):
                                                         self._epsilon)
 
 
-
-class _BatchNormBase(Module ):
-    """
-    BatchNorm base .
-    """
-
-    def __init__(self,
-                 num_features,
-                 momentum=0.9,
-                 epsilon=1e-05,
-                 weight_attr=None,
-                 bias_attr=None,
-                 data_format='NCHW',
-                 use_global_stats=None,
-                 name=None):
-        super(_BatchNormBase, self).__init__()
-        self._num_features = num_features
-        self._weight_attr = weight_attr
-        self._bias_attr = bias_attr
-        self._use_global_stats = use_global_stats
-        self.track_running_stats=True
-
-        if get_default_dtype() == 'float16':
-            set_default_dtype('float32')
-
-        param_shape = [num_features]
-
-        # create parameter
-        if weight_attr == False:
-            self.weight = self.create_parameter(
-                attr=None, shape=param_shape, default_initializer=Constant(1.0))
-            self.weight.stop_gradient = True
+class _BatchNormBase(paddle.nn.BatchNorm,Module ):
+    def __init__(self,num_features, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True):
+        if affine:
+            param_attr=None
+            bias_attr = None
         else:
-            self.weight = self.create_parameter(
-                attr=self._weight_attr,
-                shape=param_shape,
-                default_initializer=Constant(1.0))
-            self.weight.stop_gradient = self._weight_attr != None and self._weight_attr.learning_rate == 0.
+            param_attr=False
+            bias_attr = False
+        self.track_running_stats=track_running_stats
 
-        if bias_attr == False:
-            self.bias = self.create_parameter(
-                attr=None,
-                shape=param_shape,
-                default_initializer=Constant(0.0),
-                is_bias=True)
-            self.bias.stop_gradient = True
-        else:
-            self.bias = self.create_parameter(
-                attr=self._bias_attr, shape=param_shape, is_bias=True)
-            self.bias.stop_gradient = self._bias_attr != None and self._bias_attr.learning_rate == 0.
-
-        moving_mean_name = None
-        moving_variance_name = None
-
-        if name is not None:
-            moving_mean_name = name + "_mean"
-            moving_variance_name = name + "_variance"
-
-        self._mean = self.create_parameter(
-            attr=ParamAttr(
-                name=moving_mean_name,
-                initializer=Constant(0.0),
-                trainable=False,
-                do_model_average=True),
-            shape=param_shape)
-        self._mean.stop_gradient = True
-
-        self._variance = self.create_parameter(
-            attr=ParamAttr(
-                name=moving_variance_name,
-                initializer=Constant(1.0),
-                trainable=False,
-                do_model_average=True),
-            shape=param_shape)
-        self._variance.stop_gradient = True
-
-        self._data_format = data_format
-        self._in_place = False
-        self._momentum = momentum
-        self._epsilon = epsilon
-        self._fuse_with_relu = False
-        self._name = name
-
-    def _check_input_dim(self, input):
-        raise NotImplementedError("BatchNorm Base error")
-
-    def _check_data_format(self, input):
-        raise NotImplementedError("BatchNorm Base data format error")
-
-    def forward(self, input):
-
-        self._check_data_format(self._data_format)
-
-        self._check_input_dim(input)
-
-        # if self.training:
-        #     warnings.warn(
-        #         "When training, we now always track global mean and variance.")
-
-        return batch_norm(
-            input,
-            self._mean,
-            self._variance,
-            weight=self.weight,
-            bias=self.bias,
-            training=self.training,
-            momentum=self._momentum,
-            epsilon=self._epsilon,
-            data_format=self._data_format,
-            use_global_stats=self._use_global_stats)
-
-    def extra_repr(self):
-        main_str = 'num_features={}, momentum={}, epsilon={}'.format(
-            self._num_features, self._momentum, self._epsilon)
-        if self._data_format is not 'NCHW':
-            main_str += ', data_format={}'.format(self._data_format)
-        if self._name is not None:
-            main_str += ', name={}'.format(self._name)
-        return main_str
+        do_model_average_for_mean_and_var=track_running_stats
+        super(_BatchNormBase,self).__init__(num_features,momentum=momentum,epsilon=eps,param_attr=param_attr,bias_attr=bias_attr,do_model_average_for_mean_and_var=do_model_average_for_mean_and_var)
 
     def reset_running_stats(self):
-        if self.track_running_stats:
-            init.zeros_(self._mean)
-            init.constant_(self._variance,1)
-
-
-
+        # if self.track_running_stats:
+        init.zeros_(self._mean)
+        init.constant_(self._variance,1)
 
     def reset_parameters(self):
         self.reset_running_stats()
         if self.affine:
             init.ones_(self.weight)
             init.zeros_(self.bias)
+
+
 
 class BatchNorm1d(_BatchNormBase):
     r"""
