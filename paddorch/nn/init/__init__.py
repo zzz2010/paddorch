@@ -84,7 +84,7 @@ def xavier_uniform_(x, gain=1.):
 
     return uniform_(x, -a, a)
 
-def uniform_(x, a=-1., b=1.):
+def uniform_(x, a=0, b=1.):
     temp_value = paddle.uniform(min=a, max=b, shape=x.shape)
     x.set_value(temp_value)
     return x
@@ -96,6 +96,10 @@ def zeros_(x):
     x.set_value(temp_value)
     return x
 
+def ones_(x):
+    temp_value = paddle.ones(x.shape, dtype=None, name=None)
+    x.set_value(temp_value)
+    return x
 
 def calculate_gain(nonlinearity, param=None):
     linear_fns = ['linear', 'conv1d', 'conv2d', 'conv3d', 'conv_transpose1d', 'conv_transpose2d', 'conv_transpose3d']

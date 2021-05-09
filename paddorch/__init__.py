@@ -217,6 +217,11 @@ def arange(*args,**kwargs):
     # return varbase_to_tensor(paddle.paddle.range(0, end, step, dtype))
 
 def device(name):
+    if isinstance(name,int):
+        if name<0:
+            return fluid.CPUPlace()
+        else:
+            return fluid.CUDAPlace(int(name))
     if name.startswith("cuda"):
         device_id=name.replace("cuda","").replace(":","")
         if len(device_id)==0:

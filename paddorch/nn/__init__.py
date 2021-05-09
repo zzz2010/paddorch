@@ -490,7 +490,95 @@ class BatchNorm2d(dygraph.BatchNorm):
                  use_global_stats=False,
                  trainable_statistics=False)
 
-#
+class _BatchNormBase(Module):
+    _version = 2
+    __constants__ = ['track_running_stats', 'momentum', 'eps', 'weight', 'bias',
+                     'running_mean', 'running_var', 'num_batches_tracked',
+                     'num_features', 'affine']
+
+    def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True,
+                 track_running_stats=True):
+        super(_BatchNormBase, self).__init__()
+        self.num_features = num_features
+        self.eps = eps
+        self.momentum = momentum
+        self.affine = affine
+        self.track_running_stats = track_running_stats
+        if self.affine:
+            self.weight = Parameter(paddorch.ones(num_features))
+            self.bias = Parameter(paddorch.zeros(num_features))
+        else:
+            self.register_parameter('weight', None)
+            self.register_parameter('bias', None)
+        if self.track_running_stats:
+            self.register_buffer('running_mean', paddorch.zeros(num_features))
+            self.register_buffer('running_var', paddorch.ones(num_features))
+            self.register_buffer('num_batches_tracked', paddorch.tensor(0, dtype=paddorch.long))
+        else:
+            self.register_parameter('running_mean', None)
+            self.register_parameter('running_var', None)
+            self.register_parameter('num_batches_tracked', None)
+        self.reset_parameters()
+
+    def reset_running_stats(self):
+        if self.track_running_stats:
+            init.zeros_(self.running_mean)
+            init.constant_(self.running_var,1)
+            init.zeros_(self.num_batches_tracked)
+
+
+    def reset_parameters(self):
+        self.reset_running_stats()
+        if self.affine:
+            init.ones_(self.weight)
+            init.zeros_(self.bias)
+
+    def _check_input_dim(self, input):
+        raise NotImplementedError
+
+    def forward(self, input):
+        self._check_input_dim(input)
+
+        # exponential_average_factor is self.momentum set to
+        # (when it is available) only so that if gets updated
+        # in ONNX graph when this node is exported to ONNX.
+        if self.momentum is None:
+            exponential_average_factor = 0.0
+        else:
+            exponential_average_factor = self.momentum
+
+        if self.training and self.track_running_stats:
+            # TODO: if statement only here to tell the jit to skip emitting this when it is None
+            if self.num_batches_tracked is not None:
+                self.num_batches_tracked.set_value(self.num_batches_tracked+1)
+                if self.momentum is None:  # use cumulative moving average
+                    exponential_average_factor = 1.0 / float(self.num_batches_tracked)
+                else:  # use exponential moving average
+                    exponential_average_factor = self.momentum
+
+        return F.batch_norm(
+            input, self.running_mean, self.running_var, self.weight, self.bias,
+            self.training or not self.track_running_stats,
+            exponential_average_factor, self.eps)
+
+    def extra_repr(self):
+        return '{num_features}, eps={eps}, momentum={momentum}, affine={affine}, ' \
+               'track_running_stats={track_running_stats}'.format(**self.__dict__)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        version = local_metadata.get('version', None)
+
+        if (version is None or version < 2) and self.track_running_stats:
+            # at version 2: added num_batches_tracked buffer
+            #               this should have a default value of 0
+            num_batches_tracked_key = prefix + 'num_batches_tracked'
+            if num_batches_tracked_key not in state_dict:
+                state_dict[num_batches_tracked_key] = paddorch.tensor(0, dtype=paddorch.long)
+
+        super(_BatchNormBase, self)._load_from_state_dict(
+            state_dict, prefix, local_metadata, strict,
+            missing_keys, unexpected_keys, error_msgs)
 # def BatchNorm2d(num_features, eps=1e-5, momentum=0.1, affine=True,
 #                  track_running_stats=True):
 #     param_attr=None
@@ -812,7 +900,7 @@ class RNNCellBase(Module):
             if sys.version_info < (3,):
                 integer_types = (
                     int,
-                    long)
+                    "int64")
             else:
                 integer_types = (int,)
             """For shape, list/tuple of integer is the finest-grained objection"""
@@ -1112,125 +1200,132 @@ class LayerNorm(Module ):
                                                         self._epsilon)
 
 
-
-class _BatchNormBase(Module ):
-    """
-    BatchNorm base .
-    """
-
-    def __init__(self,
-                 num_features,
-                 momentum=0.9,
-                 epsilon=1e-05,
-                 weight_attr=None,
-                 bias_attr=None,
-                 data_format='NCHW',
-                 use_global_stats=None,
-                 name=None):
-        super(_BatchNormBase, self).__init__()
-        self._num_features = num_features
-        self._weight_attr = weight_attr
-        self._bias_attr = bias_attr
-        self._use_global_stats = use_global_stats
-
-        if get_default_dtype() == 'float16':
-            set_default_dtype('float32')
-
-        param_shape = [num_features]
-
-        # create parameter
-        if weight_attr == False:
-            self.weight = self.create_parameter(
-                attr=None, shape=param_shape, default_initializer=Constant(1.0))
-            self.weight.stop_gradient = True
-        else:
-            self.weight = self.create_parameter(
-                attr=self._weight_attr,
-                shape=param_shape,
-                default_initializer=Constant(1.0))
-            self.weight.stop_gradient = self._weight_attr != None and self._weight_attr.learning_rate == 0.
-
-        if bias_attr == False:
-            self.bias = self.create_parameter(
-                attr=None,
-                shape=param_shape,
-                default_initializer=Constant(0.0),
-                is_bias=True)
-            self.bias.stop_gradient = True
-        else:
-            self.bias = self.create_parameter(
-                attr=self._bias_attr, shape=param_shape, is_bias=True)
-            self.bias.stop_gradient = self._bias_attr != None and self._bias_attr.learning_rate == 0.
-
-        moving_mean_name = None
-        moving_variance_name = None
-
-        if name is not None:
-            moving_mean_name = name + "_mean"
-            moving_variance_name = name + "_variance"
-
-        self._mean = self.create_parameter(
-            attr=ParamAttr(
-                name=moving_mean_name,
-                initializer=Constant(0.0),
-                trainable=False,
-                do_model_average=True),
-            shape=param_shape)
-        self._mean.stop_gradient = True
-
-        self._variance = self.create_parameter(
-            attr=ParamAttr(
-                name=moving_variance_name,
-                initializer=Constant(1.0),
-                trainable=False,
-                do_model_average=True),
-            shape=param_shape)
-        self._variance.stop_gradient = True
-
-        self._data_format = data_format
-        self._in_place = False
-        self._momentum = momentum
-        self._epsilon = epsilon
-        self._fuse_with_relu = False
-        self._name = name
-
-    def _check_input_dim(self, input):
-        raise NotImplementedError("BatchNorm Base error")
-
-    def _check_data_format(self, input):
-        raise NotImplementedError("BatchNorm Base data format error")
-
-    def forward(self, input):
-
-        self._check_data_format(self._data_format)
-
-        self._check_input_dim(input)
-
-        # if self.training:
-        #     warnings.warn(
-        #         "When training, we now always track global mean and variance.")
-
-        return batch_norm(
-            input,
-            self._mean,
-            self._variance,
-            weight=self.weight,
-            bias=self.bias,
-            training=self.training,
-            momentum=self._momentum,
-            epsilon=self._epsilon,
-            data_format=self._data_format,
-            use_global_stats=self._use_global_stats)
-
-    def extra_repr(self):
-        main_str = 'num_features={}, momentum={}, epsilon={}'.format(
-            self._num_features, self._momentum, self._epsilon)
-        if self._data_format is not 'NCHW':
-            main_str += ', data_format={}'.format(self._data_format)
-        if self._name is not None:
-            main_str += ', name={}'.format(self._name)
-        return main_str
-
+#
+# class _BatchNormBase(Module ):
+#     """
+#     BatchNorm base .
+#     """
+#
+#     def __init__(self,
+#                  num_features,
+#                  momentum=0.9,
+#                  epsilon=1e-05,
+#                  weight_attr=None,
+#                  bias_attr=None,
+#                  data_format='NCHW',
+#                  use_global_stats=None,
+#                  track_running_stats=True,
+#                  name=None):
+#         super(_BatchNormBase, self).__init__()
+#         self._num_features = num_features
+#         self._weight_attr = weight_attr
+#         self._bias_attr = bias_attr
+#         self._use_global_stats = use_global_stats
+#         self.track_running_stats=track_running_stats
+#
+#         if get_default_dtype() == 'float16':
+#             set_default_dtype('float32')
+#
+#         param_shape = [num_features]
+#
+#         # create parameter
+#         if weight_attr == False:
+#             self.weight = self.create_parameter(
+#                 attr=None, shape=param_shape, default_initializer=Constant(1.0))
+#             self.weight.stop_gradient = True
+#         else:
+#             self.weight = self.create_parameter(
+#                 attr=self._weight_attr,
+#                 shape=param_shape,
+#                 default_initializer=Constant(1.0))
+#             self.weight.stop_gradient = self._weight_attr != None and self._weight_attr.learning_rate == 0.
+#
+#         if bias_attr == False:
+#             self.bias = self.create_parameter(
+#                 attr=None,
+#                 shape=param_shape,
+#                 default_initializer=Constant(0.0),
+#                 is_bias=True)
+#             self.bias.stop_gradient = True
+#         else:
+#             self.bias = self.create_parameter(
+#                 attr=self._bias_attr, shape=param_shape, is_bias=True)
+#             self.bias.stop_gradient = self._bias_attr != None and self._bias_attr.learning_rate == 0.
+#
+#         moving_mean_name = None
+#         moving_variance_name = None
+#
+#         if name is not None:
+#             moving_mean_name = name + "_mean"
+#             moving_variance_name = name + "_variance"
+#
+#         self._mean = self.create_parameter(
+#             attr=ParamAttr(
+#                 name=moving_mean_name,
+#                 initializer=Constant(0.0),
+#                 trainable=False,
+#                 do_model_average=True),
+#             shape=param_shape)
+#         self._mean.stop_gradient = True
+#
+#         self._variance = self.create_parameter(
+#             attr=ParamAttr(
+#                 name=moving_variance_name,
+#                 initializer=Constant(1.0),
+#                 trainable=False,
+#                 do_model_average=True),
+#             shape=param_shape)
+#         self._variance.stop_gradient = True
+#
+#         self._data_format = data_format
+#         self._in_place = False
+#         self._momentum = momentum
+#         self._epsilon = epsilon
+#         self._fuse_with_relu = False
+#         self._name = name
+#
+#     def _check_input_dim(self, input):
+#         raise NotImplementedError("BatchNorm Base error")
+#
+#     def _check_data_format(self, input):
+#         raise NotImplementedError("BatchNorm Base data format error")
+#
+#     def forward(self, input):
+#
+#         self._check_data_format(self._data_format)
+#
+#         self._check_input_dim(input)
+#
+#         # if self.training:
+#         #     warnings.warn(
+#         #         "When training, we now always track global mean and variance.")
+#
+#         return batch_norm(
+#             input,
+#             self._mean,
+#             self._variance,
+#             weight=self.weight,
+#             bias=self.bias,
+#             training=self.training,
+#             momentum=self._momentum,
+#             epsilon=self._epsilon,
+#             data_format=self._data_format,
+#             use_global_stats=self._use_global_stats)
+#
+#     def extra_repr(self):
+#         main_str = 'num_features={}, momentum={}, epsilon={}'.format(
+#             self._num_features, self._momentum, self._epsilon)
+#         if self._data_format is not 'NCHW':
+#             main_str += ', data_format={}'.format(self._data_format)
+#         if self._name is not None:
+#             main_str += ', name={}'.format(self._name)
+#         return main_str
+#
+#     def reset_running_stats(self):
+#         if self.track_running_stats:
+#             self._mean.zero_()
+#             self._variance.fill_(1)
+#             self.num_batches_tracked.zero_()
 
 class BatchNorm1d(_BatchNormBase):
     r"""

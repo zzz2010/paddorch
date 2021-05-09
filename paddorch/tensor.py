@@ -466,3 +466,8 @@ class Tensor(paddle.Tensor  ):
         fluid.layers.assign(new_values, self)
         return self
 
+    def argmax(self,dim=0,keepdim=False):
+        return convertTensor(paddle.argmax(self,axis=dim,keepdim=keepdim))
+
+    def tolist(self):
+        return self.cpu().numpy().tolist()
