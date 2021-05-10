@@ -472,3 +472,19 @@ class Tensor(paddle.Tensor  ):
 
     def tolist(self):
         return self.cpu().numpy().tolist()
+
+
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes. Always use the dict.copy()
+        # method to avoid modifying the original state.
+        state = self.__dict__.copy()
+        # Remove the unpicklable entries.
+        state['device']=str(state['device'])
+        state['value']=self.cpu().numpy()
+        return state
+
+    def __setstate__(self, state):
+        # Restore instance attributes (i.e., filename and lineno).
+        self.__init__(state['value'])
+
