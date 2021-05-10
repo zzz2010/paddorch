@@ -22,9 +22,9 @@ def from_dlpack(dlpack):
     place=tensor_from_dlpack._place()
     if "win" in platform: # CPU env
         if "int64" in str(tensor_from_dlpack):
-            return paddorch.convertTensor(paddorch.Tensor(np.array(tensor_from_dlpack)).astype("int64"))
+            return paddorch.convertTensor(paddle.to_tensor(np.array(tensor_from_dlpack),dtype="int64"))
         else:
-            return paddorch.Tensor(np.array(tensor_from_dlpack))
+            return paddorch.Tensor(paddle.to_tensor(np.array(tensor_from_dlpack)))
     else:
         with paddle.fluid.dygraph.guard(place=place):
             tensor_from_dlpack.__class__=paddle.fluid.LoDTensor

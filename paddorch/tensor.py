@@ -246,6 +246,20 @@ class Tensor(paddle.Tensor  ):
         return self
 
     def to(self,*args, **kwargs):
+        if isinstance(args[0],paddle.Tensor):
+            dtype=str(args[0].dtype)
+            if "64" in dtype:
+                dtype="int64"
+            elif "32" in dtype:
+                dtype = "float32"
+            else:
+                return self
+        else:
+            dtype=str(args[0])
+        if dtype=="int64":
+            return self.long()
+        elif dtype=="float32":
+            return self.float()
         return self
 
 
@@ -481,10 +495,12 @@ class Tensor(paddle.Tensor  ):
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
         state['device']=str(state['device'])
+
         state['value']=self.cpu().numpy()
-        return state
+        state['dtype'] = str(state['value'].dtype)
+        return {}
 
     def __setstate__(self, state):
         # Restore instance attributes (i.e., filename and lineno).
-        self.__init__(state['value'])
+        self.__init__(paddle.to_tensor(state['value'],dtype=state['dtype'] )  )
 
