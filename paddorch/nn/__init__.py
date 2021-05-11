@@ -36,7 +36,7 @@ from paddle.nn import Sequential
 from collections import OrderedDict as ModuleDict
 import warnings
 from paddle.nn import functional as F
-from paddle.nn import LogSigmoid,CrossEntropyLoss
+from paddle.nn import LogSigmoid,CrossEntropyLoss,ParameterList,PReLU,NLLLoss,KLDivLoss
 
 
 def clone_layer(layer):

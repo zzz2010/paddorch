@@ -9,6 +9,7 @@ import paddorch.nn.functional
 import paddorch.nn.init
 from paddle.fluid import dygraph
 import numpy as np
+from paddle import isinf,isnan,isfinite
 from paddorch.tensor import varbase_to_tensor,Tensor,convertTensor
 from . import optim
 from . import  vision
@@ -61,7 +62,9 @@ def squeeze(x,axes=[-1]):
     return Tensor(paddle.squeeze(x,axes))
 
 def split(x,batch_size,dim=0):
-    return [convertTensor(y) for y in paddle.split(x,batch_size,dim)]
+    if batch_size>x.shape[dim]:
+        return  [x] #do nothing
+    return [convertTensor(y) for y in paddle.split(x,x.shape[dim]//batch_size,dim)]
 
 
 

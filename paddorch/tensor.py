@@ -354,6 +354,11 @@ class Tensor(paddle.Tensor  ):
 
         else:
             key=convert_key_to_inttensor(key)
+
+        if key.shape[0]==0: ##empty selection, do nothing
+            return self
+        if not isinstance(value,paddle.Tensor):
+            value=paddle.ones_like(key)*value
         return paddle.scatter_(self,key,value)
 
 
@@ -486,6 +491,9 @@ class Tensor(paddle.Tensor  ):
 
     def tolist(self):
         return self.cpu().numpy().tolist()
+    def uniform_(self,low,high):
+        paddorch.copy(paddorch.uniform_(self.shape,low,high),self)
+        return self
 
 
     def __getstate__(self):
@@ -498,7 +506,7 @@ class Tensor(paddle.Tensor  ):
 
         state['value']=self.cpu().numpy()
         state['dtype'] = str(state['value'].dtype)
-        return {}
+        return state
 
     def __setstate__(self, state):
         # Restore instance attributes (i.e., filename and lineno).
