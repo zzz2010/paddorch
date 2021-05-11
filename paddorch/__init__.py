@@ -62,9 +62,12 @@ def squeeze(x,axes=[-1]):
     return Tensor(paddle.squeeze(x,axes))
 
 def split(x,batch_size,dim=0):
-    if batch_size>x.shape[dim]:
-        return  [x] #do nothing
-    return [convertTensor(y) for y in paddle.split(x,x.shape[dim]//batch_size,dim)]
+    if isinstance(batch_size,int):
+        if batch_size>x.shape[dim]:
+            return  [x] #do nothing
+        return [convertTensor(y) for y in paddle.split(x,x.shape[dim]//batch_size,dim)]
+    else:
+        return [convertTensor(y) for y in paddle.split(x,  batch_size, dim)]
 
 
 

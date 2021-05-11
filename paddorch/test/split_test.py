@@ -66,3 +66,20 @@ if __name__ == "__main__":
     paddle_out=[x.shape for x in torch.split(inputs['input'], inputs['split_size'])]
     print("paddorch:",paddle_out)
     assert  torch_out==paddle_out
+
+
+    M=100
+    N=20
+    parts=40
+    inputs = {
+        "input": torch.rand(M, N),
+        "split_size": int(M * N / parts)
+    }
+    inputs['split_size']=[37,63]
+    import torch as th
+    th_input=th.from_numpy(inputs['input'].numpy())
+    torch_out=[x.shape for x in th.split(th_input,inputs['split_size'])]
+    print("torch:",[x.shape for x in th.split(th_input,inputs['split_size'])])
+    paddle_out=[x.shape for x in torch.split(inputs['input'], inputs['split_size'])]
+    print("paddorch:",paddle_out)
+    assert  torch_out==paddle_out
