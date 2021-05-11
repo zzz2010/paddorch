@@ -27,7 +27,6 @@ def convertTensor(x):
     if isinstance(x,paddorch.Tensor):
         return x
     ret=  paddorch.Tensor(x)
-    del x
     return ret
 
 # class Tensor(dygraph.core.VarBase):
