@@ -96,12 +96,16 @@ class Tensor(paddle.Tensor  ):
 
     def scatter_add(self, dim,index, updates ):
         assert  dim==0, "scatter_add_, no support dim>0"
+        if "64" in str(updates.dtype):
+            updates=updates.astype("float32")
         ret=self
+        if "64" in str(ret.dtype):
+            ret=ret.astype("float32")
         if len(index.shape)==1:
-            ret=paddle.scatter(ret, index , updates.astype("float32"), overwrite=False)
+            ret=paddle.scatter(ret, index , updates , overwrite=False)
         else:
             for ii in range(index.shape[1]):
-                ret=paddle.scatter(ret,index[:,ii],updates.astype("float32"),overwrite=False)
+                ret=paddle.scatter(ret,index[:,ii],updates ,overwrite=False)
 
         return ret
 

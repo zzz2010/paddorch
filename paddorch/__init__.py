@@ -568,3 +568,7 @@ def rot90(input, k=1, dims=[1,0]):
 
 def cos(x):
     return convertTensor(paddle.cos(x))
+
+
+def log_softmax(x,dim=-1):
+    return  convertTensor(paddle.nn.functional.log_softmax(x,axis=dim))
