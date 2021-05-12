@@ -342,6 +342,8 @@ class Tensor(paddle.Tensor  ):
         if isinstance(key, np.ndarray) or isinstance(key,paddle.Tensor):
             key = convert_key_to_inttensor(key)
         elif isinstance(key,Iterable) :
+            if isinstance(key[0],slice):
+                return super(Tensor, self).__setitem__(key, value)
             key2=[]
             for i in range(len(key)):
                 key2.append(convert_key_to_inttensor(key[i]))
