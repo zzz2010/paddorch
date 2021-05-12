@@ -357,7 +357,7 @@ class Tensor(paddle.Tensor  ):
         if key.shape[0]==0: ##empty selection, do nothing
             return self
         if not isinstance(value,paddle.Tensor):
-            value=paddle.ones_like(key)*value
+            value=paddle.ones_like(key)*float(value)
         return paddle.scatter_(self,key,value)
 
 
