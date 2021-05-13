@@ -86,6 +86,11 @@ class Tensor(paddle.Tensor  ):
 
     def scatter_add_(self, dim,index, updates ):
         assert  dim==0, "scatter_add_, no support dim>0"
+        if "64" in str(updates.dtype):
+            updates=updates.astype("float32")
+
+        if "64" in str(self.dtype):
+            self=self.astype("float32")
         if len(index.shape)==1:
             paddle.scatter_(self, index , updates.astype("float32"), overwrite=False)
         else:
