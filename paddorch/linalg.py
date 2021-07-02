@@ -561,8 +561,8 @@ def dot(x, y, name=None):
        is the batch dimension, which means that the vectors of multiple batches are dotted.
 
     Parameters:
-        x(Tensor): 1-D or 2-D ``Tensor``. Its dtype should be ``float32``, ``float64``, ``int32``, ``int64``
-        y(Tensor): 1-D or 2-D ``Tensor``. Its dtype soulde be ``float32``, ``float64``, ``int32``, ``int64``
+        x(Tensor): 1-D or 2-D ``Tensor``. Its dtype should be ``float32``, ``float64``, ``int32``, ``int32``
+        y(Tensor): 1-D or 2-D ``Tensor``. Its dtype soulde be ``float32``, ``float64``, ``int32``, ``int32``
         name(str, optional): Name of the output. Default is None. It's used to print debug info for developers. Details: :ref:`api_guide_Name`
 
     Returns:
@@ -593,9 +593,9 @@ def dot(x, y, name=None):
     assert x is not None, 'x cannot be None in {}'.format(op_type)
     assert y is not None, 'y cannot be None in {}'.format(op_type)
 
-    check_variable_and_dtype(x, 'x', ['float32', 'float64', 'int32', 'int64'],
+    check_variable_and_dtype(x, 'x', ['float32', 'float64', 'int32', 'int32'],
                              op_type)
-    check_variable_and_dtype(y, 'y', ['float32', 'float64', 'int32', 'int64'],
+    check_variable_and_dtype(y, 'y', ['float32', 'float64', 'int32', 'int32'],
                              op_type)
 
     helper = LayerHelper(op_type, **locals())
@@ -624,7 +624,7 @@ def t(input, name=None):
         name(str, optional): The default value is None.  Normally there is no need for
             user to set this property.  For more information, please refer to :ref:`api_guide_Name`
     Returns:
-        Variable: A transposed n-D Tensor, with data type being float16, float32, float64, int32, int64.
+        Variable: A transposed n-D Tensor, with data type being float16, float32, float64, int32, int32.
 
     For Example:
         .. code-block:: text
@@ -666,7 +666,7 @@ def t(input, name=None):
         return out
 
     check_variable_and_dtype(
-        input, 'input', ['float16', 'float32', 'float64', 'int32', 'int64'],
+        input, 'input', ['float16', 'float32', 'float64', 'int32', 'int32'],
         'transpose')
 
     helper = LayerHelper('t', **locals())
@@ -870,13 +870,13 @@ def histogram(input, bins=100, min=0, max=0):
 
     Args:
         input (Variable): A Tensor(or LoDTensor) with shape :math:`[N_1, N_2,..., N_k]` . The data type of the input Tensor
-            should be float32, float64, int32, int64.
+            should be float32, float64, int32, int32.
         bins (int): number of histogram bins
         min (int): lower end of the range (inclusive)
         max (int): upper end of the range (inclusive)
 
     Returns:
-        Variable: Tensor or LoDTensor calculated by histogram layer. The data type is int64.
+        Variable: Tensor or LoDTensor calculated by histogram layer. The data type is int32.
 
     Code Example 1:
         .. code-block:: python
@@ -910,7 +910,7 @@ def histogram(input, bins=100, min=0, max=0):
 
     helper = LayerHelper('histogram', **locals())
     check_variable_and_dtype(
-        input, 'X', ['int32', 'int64', 'float32', 'float64'], 'histogram')
+        input, 'X', ['int32', 'int32', 'float32', 'float64'], 'histogram')
     out = helper.create_variable_for_type_inference(VarDesc.VarType.INT64)
     helper.append_op(
         type='histogram',

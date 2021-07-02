@@ -1,3 +1,5 @@
+import paddle.nn
+
 import paddorch
 from paddorch.tensor import  new_full
 from  paddle import fluid
@@ -10,12 +12,13 @@ from  paddle import fluid
 def Parameter(shape_or_tensor, fill_value=None, requires_grad=True):
     if isinstance(shape_or_tensor, fluid.framework.core.VarBase):
         X=Parameter(shape_or_tensor.shape, 0.0)
-        fluid.layers.assign(shape_or_tensor, X)
+        fluid.layers.assign(shape_or_tensor.astype("float32"), X)
     else:
         if isinstance(shape_or_tensor, int):
             shape_or_tensor=[shape_or_tensor]
         # return fluid.dygraph.layers.create_parameter(layer,shape,default_initializer=fluid.initializer.ConstantInitializer(value=fill_value))
         # return new_full(shape,fill_value)
+
         X= fluid.layers.create_parameter(
                         shape=shape_or_tensor,dtype="float32",
                         attr=fluid.ParamAttr(name=None, initializer=fluid.initializer.ConstantInitializer(value=fill_value)),

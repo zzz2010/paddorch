@@ -2,6 +2,8 @@ from paddle import fluid
 from paddle.fluid.io import  Dataset,BatchSampler
 import numpy as np
 import paddorch
+import paddle
+from . import  graph
 
 def default_collate_fn(batch):
     """
@@ -27,7 +29,7 @@ def default_collate_fn(batch):
     # dataset has only 1 field
     if isinstance(sample, np.ndarray):
         return   np.stack(batch, axis=0)  #[np.stack(batch, axis=0)]
-    if isinstance(sample, int) or isinstance(sample, np.int64):
+    if isinstance(sample, int) or isinstance(sample, np.int32):
         return  np.array(batch)
 
     if isinstance(sample, fluid.core.VarBase):
@@ -49,6 +51,7 @@ def DataLoader(dataset ,  batch_size=None ,
 
     if collate_fn is None:
         collate_fn=default_collate_fn
+
     return   fluid.io.DataLoader(dataset=dataset,
                            batch_size=batch_size,
                            shuffle=shuffle,
@@ -84,7 +87,7 @@ class IterableDataset(Dataset):
                 def __iter__(self):
                     for i in range(self.num_samples):
                         image = np.random.random([784]).astype('float32')
-                        label = np.random.randint(0, 9, (1, )).astype('int64')
+                        label = np.random.randint(0, 9, (1, )).astype('int32')
                         yield image, label
 
             dataset = RandomDataset(10)
@@ -224,3 +227,31 @@ class TensorDataset(Dataset):
 
     def __len__(self):
         return self.tensors[0].shape[0]
+
+
+def get_worker_info():
+    return paddle.fluid.io.get_worker_info()
+
+
+class Subset(Dataset ):
+    r"""
+    Subset of a dataset at specified indices.
+
+    Arguments:
+        dataset (Dataset): The whole Dataset
+        indices (sequence): Indices in the whole set selected for subset
+    """
+    dataset: Dataset
+    indices: list
+
+    def __init__(self, dataset: Dataset, indices) -> None:
+        self.dataset = dataset
+        if isinstance(indices,np.ndarray):
+            indices=indices.tolist()
+        self.indices = indices
+
+    def __getitem__(self, idx):
+        return self.dataset[self.indices[idx]]
+
+    def __len__(self):
+        return len(self.indices)

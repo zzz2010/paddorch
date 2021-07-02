@@ -1,6 +1,8 @@
 import paddle.fluid as fluid
 from paddle.fluid.initializer import NumpyArrayInitializer
 import paddorch as torch
+from paddle.nn.functional import softplus
+import paddle
 
 def avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
     if stride is None:
@@ -63,7 +65,8 @@ def linear(input, weight, bias=None):
     return torch.Tensor(layer_obj(input))
 
 def normalize(input, p=2, dim=1, eps=1e-12, out=None):
-    return torch.Tensor(fluid.layers.l2_normalize(input,axis=dim,epsilon=eps))
+    return torch.convertTensor( input/paddle.norm(input,p,axis=dim,keepdim=True))
+    # return torch.Tensor(fluid.layers.l2_normalize(input,axis=dim,epsilon=eps))
 def sigmoid(x):
     return torch.Tensor(fluid.layers.sigmoid(x))
 
@@ -131,3 +134,31 @@ def conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_paddi
 #
 # def l1_loss(input, target, size_average=None, reduce=None, reduction='mean'):
 #     return fluid.dygraph.L1Loss()
+
+
+
+def elu(x):
+    return fluid.layers.elu(x, alpha=1.0, name=None)
+
+
+def cross_entropy(input, label):
+    return paddle.nn.functional.cross_entropy(input, label, weight=None, ignore_index=- 100, reduction='mean',
+                                              soft_label=False, axis=- 1, name=None)
+
+
+def cosine_similarity(x1, x2):
+    return paddle.nn.functional.cosine_similarity(x1, x2, axis=1, eps=1e-8)
+
+
+def log_softmax(x, dim):
+    return paddle.nn.functional.log_softmax(x, axis=dim, dtype=None, name=None)
+
+
+def pad(input, pad, mode='constant', value=0):
+    pad2=[]
+    for _ in range(len(input.shape)*2-len(pad)):
+        pad2.append(0)
+    if isinstance(pad, tuple):
+        pad=list(pad)
+    pad2=pad2+pad
+    return paddle.nn.functional.pad(input,pad2,mode=mode,value=value)

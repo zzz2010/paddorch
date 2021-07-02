@@ -1,9 +1,10 @@
 from .. import Module
 from .. import Parameter
+from .. import init
 import paddorch as torch
 # TODO: check contiguous in THNN
 # TODO: use separate backend functions?
-class _BatchNorm(Module):
+class _BatchNormBase(Module):
     _version = 2
     __constants__ = ['track_running_stats', 'momentum', 'eps', 'weight', 'bias',
                      'running_mean', 'running_var', 'num_batches_tracked',
@@ -11,7 +12,7 @@ class _BatchNorm(Module):
 
     def __init__(self, num_features, eps=1e-5, momentum=0.1, affine=True,
                  track_running_stats=True):
-        super(_BatchNorm, self).__init__()
+        super(_BatchNormBase, self).__init__()
         self.num_features = num_features
         self.eps = eps
         self.momentum = momentum
@@ -88,6 +89,6 @@ class _BatchNorm(Module):
             if num_batches_tracked_key not in state_dict:
                 state_dict[num_batches_tracked_key] = torch.tensor(0, dtype=torch.long)
 
-        super(_BatchNorm, self)._load_from_state_dict(
+        super(_BatchNormBase, self)._load_from_state_dict(
             state_dict, prefix, local_metadata, strict,
             missing_keys, unexpected_keys, error_msgs)

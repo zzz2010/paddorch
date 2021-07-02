@@ -2,33 +2,48 @@ import paddle.fluid as fluid
 import paddle
 from . import cuda
 from . import  nn
+from . import sparse
 import os
+from. import autograd
 import paddorch.nn.functional
 import paddorch.nn.init
 from paddle.fluid import dygraph
 import numpy as np
-from paddorch.tensor import varbase_to_tensor,Tensor
+from paddle import isinf,isnan,isfinite
+from paddorch.tensor import varbase_to_tensor,Tensor,convertTensor
 from . import optim
 from . import  vision
+from . import utils
+from . import sparse
+from paddle import argmax,argsort,argmin
+__version__='0.2.0'
 
 double="float32"
+bool="bool"
+float="float32"
+long="int32"
 
-def chunk(self , chunks , dim ):
-    slices= paddle.unstack(self, axis=dim, num=None)
-    out_list=[]
-    step=int(np.ceil(len(slices)/chunks))
-    for st in range(0,len(slices),step):
-        out_list.append(varbase_to_tensor(fluid.layers.concat( [paddle.unsqueeze(x, dim, name=None) for x in slices[st:(st+step)] ], axis=dim, name=None)))
+def chunk(self, chunks, dim):
+    slices = paddle.unstack(self, axis=dim, num=None)
+    out_list = []
+    step = int(np.ceil(len(slices) / chunks))
+    for st in range(0, len(slices), step):
+        out_list.append(varbase_to_tensor(
+            fluid.layers.concat([paddle.unsqueeze(x, dim, name=None) for x in slices[st:(st + step)]], axis=dim,
+                                name=None)))
     return out_list
 
 def trace(x, offset=0, dim1=0, dim2=1, out=None):
     return Tensor(paddle.trace(x,offset,dim1,dim2,out))
 
-
+def from_numpy(x):
+    return Tensor(x)
 def bmm(x,y):
-
     return Tensor(paddle.bmm(x,y))
-def eye(n , m ):
+
+def eye(n , m=None ):
+    if m is None:
+        m=n
     return Tensor(paddle.eye(n,m))
 
 def dot(x,y):
@@ -37,60 +52,65 @@ def mm(x,y):
     return matmul(x,y)
 
 def narrow(x, dim, start, length):
+    if start<0:
+        start=x.shape[dim]+start
+    if dim<0:
+        dim=len(x.shape)+dim
     return  paddle.slice(x,[dim],[start],[start+length] )
 
 def squeeze(x,axes=[-1]):
     return Tensor(paddle.squeeze(x,axes))
 
 def split(x,batch_size,dim=0):
-
-    if not isinstance(batch_size,int):
-        Y=[]
-        st=0
-        for bs in batch_size: #list of split size
-            ed=st+bs
-            Y.append(x[st:ed])
-            st=ed
-
+    if isinstance(batch_size,int):
+        if batch_size>x.shape[dim]:
+            return  [x] #do nothing
+        return [convertTensor(y) for y in paddle.split(x,x.shape[dim]//batch_size,dim)]
     else:
-        n_splits = x.shape[0] // batch_size
-        last_index=n_splits*batch_size
-        Y= paddle.split(x[:last_index],n_splits,dim=dim)
-    # if last_index != x.shape[0]: ##handle not equal divide case
-    #     Y.append(x[last_index:])
-    return Y
+        return [convertTensor(y) for y in paddle.split(x,  batch_size, dim)]
+
+
 
 def empty(*size):
-    return zeros(*size)
+    return zeros(size)
 
-def matmul(x,y):
-    return Tensor(paddle.matmul(x,y ))
+def matmul(x,y,transpose_y=False):
+    if isinstance(x,paddorch.sparse.FloatTensor):
+        return paddorch.sparse.mm(x,y)
+    return convertTensor(paddle.matmul(x,y,transpose_y=transpose_y ))
+
 def tensor(x,dtype=np.float32):
     if isinstance(x,list):
-        x=np.array(x,dtype=dtype)
-    if isinstance(x,int) or isinstance(x,np.int64):
-        return zeros(x)
-    return Tensor(x)
+        x=paddle.to_tensor(x,dtype=dtype,stop_gradient=True)
+    if isinstance(x,int) or isinstance(x,np.int32):
+        return convertTensor(Tensor([x]).astype(dtype))
+    return convertTensor(Tensor(x).astype(dtype))
 
-def FloatTensor(x):
+def FloatTensor(x=None,size=None):
+    if x is None and size is not None:
+        return zeros(size)
     if isinstance(x,int):
-        return zeros(x)
+        if isinstance(size,int):
+            return zeros((x,size))
+        else:
+            return zeros(x)
     return tensor(x)
 
 def abs(x):
     return paddle.abs(x)
 def max(x,dim=None,keepdim=False):
-    return varbase_to_tensor(fluid.layers.reduce_max(x,dim,keep_dim= keepdim ))
+    return varbase_to_tensor(paddle.max(x,dim,keepdim= keepdim ))
 
 def min(x,dim=None,keepdim=False):
-    return varbase_to_tensor(fluid.layers.reduce_min(x,dim,keep_dim= keepdim ))
+    return varbase_to_tensor(paddle.min(x,dim,keepdim= keepdim ))
 
 def full_like(x,fill_value):
     return Tensor.new_full(x,x.shape,fill_value)
 
 def norm(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
-    from . import linalg
-    return Tensor(linalg.norm(input, p=p, axis=dim, keepdim=keepdim,   name=None))
+    return convertTensor(paddle.norm(input,p=p,axis=dim,keepdim=keepdim))
+    # from . import linalg
+    # return Tensor(linalg.norm(input, p=p, axis=dim, keepdim=keepdim,   name=None))
 
 
 def where(condition, x=None, y=None):
@@ -119,15 +139,20 @@ def take(x,indices):
 def linspace(start, stop, num, dtype="float32"):
     return Tensor(fluid.layers.linspace(start, stop, num, dtype))
 
-def randint(low, high, size ,
-           dtype="int64", requires_grad=False):
-    return Tensor(paddle.randint(low,
-            high=high,
-            shape=size,
-            out=None,
-            dtype=dtype,
-            device=None,
-            stop_gradient=not requires_grad))
+def randint(low, high, size=[1] ,
+            dtype="int32", requires_grad=False):
+    return Tensor(paddle.randint(low=low, high=high, shape= size, dtype=dtype, name=None))
+
+def rand(*shape):
+    if isinstance(shape,int):
+        shape=[shape]
+    if isinstance(shape[0],Iterable):
+        shape=shape[0]
+    return Tensor(paddle.rand(shape))
+
+
+def floor(x):
+    return Tensor(paddle.floor(x))
 
 def copy(src,target):
     # target.set_value(src)
@@ -150,12 +175,21 @@ def as_tensor(x,dtype=np.float32):
 
 def is_tensor(x):
     return isinstance(x, ( dygraph.core.VarBase,  dygraph.framework.Variable,
-                        dygraph.framework.ComplexVariable))
+                           dygraph.framework.ComplexVariable))
 
 def manual_seed(seed):
     fluid.Program.random_seed=seed
     np.random.seed(seed)
+    paddle.seed(seed)
 
+def topk(input, k, dim=None, largest=True, sorted=True,  out=None)  :
+    vals, inds=paddle.topk(input,k,axis=dim,largest=largest,sorted=sorted)
+    return vals,inds
+
+
+
+def Size(size):
+    return size
 def multinomial(weights , num_samples , replacement=False):
     select_samples=[]
     if not replacement and num_samples>len(weights):
@@ -170,10 +204,10 @@ def multinomial(weights , num_samples , replacement=False):
     return  select_samples
 def LongTensor(x):
     if isinstance(x,int):
-        return Tensor(fluid.Tensor)
+        return Tensor(paddle.to_tensor([x]))
     if isinstance(x,list):
-        x=np.array(x,dtype=np.int32)
-    return Tensor(x )
+        x=paddle.to_tensor(x,dtype="int32")
+    return convertTensor(Tensor(x ).astype("int32"))
 
 def stack(inputs,dim=0,out=None):
     x= paddle.stack(inputs ,axis=dim )
@@ -183,12 +217,17 @@ def stack(inputs,dim=0,out=None):
         paddle.assign(x,out)
         return out
 def arange(*args,**kwargs):
-    return Tensor(np.arange(*args,**kwargs).astype("int32"))
+    return paddorch.Tensor(np.arange(*args,**kwargs).astype("int32"))
     # if end==0:
     #     return []
     # return varbase_to_tensor(paddle.paddle.range(0, end, step, dtype))
 
 def device(name):
+    if isinstance(name,int):
+        if name<0:
+            return fluid.CPUPlace()
+        else:
+            return fluid.CUDAPlace(int(name))
     if name.startswith("cuda"):
         device_id=name.replace("cuda","").replace(":","")
         if len(device_id)==0:
@@ -206,11 +245,18 @@ def cat(tensors, dim=0, out=None):
         paddle.assign(x,out)
         return out
 
-
+from collections.abc import Iterable
 def ones(*size, out=None, dtype="float32",device=None):
+    if isinstance(size[0],Iterable):
+        size=size[0]
     return varbase_to_tensor(paddle.ones(size,dtype))
 
+
 def zeros(*size, out=None, dtype="float32",device=None,requires_grad=True):
+    if isinstance(size[0],Iterable):
+        size=size[0]
+        if isinstance(size[0], Iterable):
+            size = size[0]
     X= varbase_to_tensor(paddle.zeros(size,dtype))
     if not requires_grad:
         X.stop_gradient=True
@@ -218,6 +264,10 @@ def zeros(*size, out=None, dtype="float32",device=None,requires_grad=True):
 
 def ones_like(x, out=None,device=None):
     return varbase_to_tensor(paddle.ones_like(x,out))
+
+
+def mul(x,y):
+    return paddle.multiply(x,y)
 
 def cov(m, rowvar=False, inplace=False):
     '''Estimate a covariance matrix given data.
@@ -261,7 +311,9 @@ def zeros_like(x, out=None,device=None):
     return varbase_to_tensor(paddle.zeros_like(x,out))
 
 def randn(*shape, requires_grad=True):
-    X= varbase_to_tensor(paddle.randn(*shape))
+    if isinstance(shape[0],Iterable):
+        shape=shape[0]
+    X= varbase_to_tensor(paddle.randn(shape))
     if not requires_grad:
         X.stop_gradient=True
     return X
@@ -303,8 +355,8 @@ def lerp(input, end, weight, out=None):
         paddle.assign(x,out)
         return out
 
-def flatten(x,dim=1):
-    x=paddle.flatten(x ,axis=dim)
+def flatten(x,start_dim=0, end_dim=-1):
+    x=paddle.flatten(x ,start_axis=start_dim,stop_axis=end_dim)
     return varbase_to_tensor(x)
 
 def clamp(input, min, max, out=None) :
@@ -336,7 +388,7 @@ def save(dict_obj, filename):
             os.makedirs(filename,exist_ok=True)
             for key in dict_obj:
 
-                    fluid.dygraph.save_dygraph( dict_obj[key], filename+"/"+str(key) )
+                fluid.dygraph.save_dygraph( dict_obj[key], filename+"/"+str(key) )
     except Exception as E:
         print(E)
 
@@ -356,9 +408,167 @@ def load(file_path,map_location=None) :
     return out_dict
 
 def sigmoid(x):
-    return Tensor(fluid.layers.sigmoid(x))
+    return convertTensor(fluid.layers.sigmoid(x))
 def tanh(x):
-    return Tensor(fluid.layers.tanh(x))
+    return convertTensor(fluid.layers.tanh(x))
 
-def transpose(x,*perm):
-    return x.transpose(*perm)
+def transpose(x,dim0,dim1):
+    return x.transpose([dim0,dim1])
+
+
+
+def unique(x):
+    return convertTensor(paddle.unique(x))
+
+
+def argsort(x, dim=-1, descending=False):
+    return convertTensor(paddle.argsort(x, axis=dim, descending=descending))
+
+
+def exp(x):
+    return convertTensor(paddle.exp(x))
+
+
+def index_select(x, dim, index):
+    return convertTensor(paddle.index_select(x, index.astype("int32"), axis=dim))
+
+
+def unqueeze(x, dim):
+    return convertTensor(paddle.unsqueeze(x, axis=dim))
+
+
+def reshape(x, shape):
+    return convertTensor(paddle.reshape(x, shape))
+
+
+def uniform_(shape, low, high):
+    return convertTensor(paddle.uniform(shape, dtype='float32', min=low, max=high, seed=0))
+
+
+def full(shape, fill_value, dtype="float32", device="cpu"):
+    return convertTensor(paddle.full(shape, fill_value, dtype=dtype, name=device))
+
+
+def nonzero(x):
+    return  paddle.nonzero(x, as_tuple=True)[0]
+
+
+def sort(x, axis=1, descending=False):
+    return convertTensor(paddle.sort(x, axis=axis, descending=descending, name=None))
+
+
+def randperm(n):
+    return convertTensor(paddle.randperm(n, dtype='int32', name=None))
+
+
+def relu(x):
+    return convertTensor(paddle.fluid.layers.relu(x))
+
+
+def softmax(x, dim=-1):
+    return convertTensor(paddle.nn.functional.softmax(x,axis=dim))
+
+
+def diag(x):
+    return convertTensor(paddle.diag(x, offset=0, padding_value=0, name=None))
+
+
+def sparse_coo_tensor(indices, data, shape):
+    sparse_tensor = sparse.FloatTensor(indices, data, shape)
+    return sparse_tensor
+
+
+def to_dense(x):
+    return x
+
+
+def assign(x, output=None):
+    return tensor.assign(x, output)
+
+
+def expand(x, shape):
+    return paddle.expand(x, shape)
+
+
+def index_copy_(x,dim, index, tensor):
+    y=index_copy(x , dim, index, tensor)
+    # query_key=[]
+    # for k in range(dim):
+    #     query_key.append(None)
+    # if isinstance(index,Tensor):
+    #     index=index.long()
+    # query_key.append(index)
+    # # x[tuple(query_key)]=tensor
+    #
+    # query_key=paddle.concat(query_key)
+    # y=paddle.scatter(x,query_key,tensor)
+
+    copy(y,x)
+    return x
+
+def index_copy_inplace_nograd(x,dim, index, tensor):
+
+    query_key=[]
+    for k in range(dim):
+        query_key.append(None)
+    if isinstance(index,Tensor):
+        index=index.long()
+    query_key.append(index)
+    query_key=paddle.concat(query_key)
+    paddle.scatter_(x,query_key,tensor)
+
+    return x
+
+
+def index_copy(x:paddorch.Tensor,dim, index, tensor):
+    query_key=[]
+    for k in range(dim):
+        query_key.append(None)
+    if isinstance(index,Tensor):
+        index=index.long()
+    query_key.append(index)
+    # x[tuple(query_key)]=tensor
+
+    query_key=paddle.concat(query_key)
+    y=convertTensor(paddle.scatter(x,query_key,tensor))
+    return y
+
+def div(x,y):
+    return x/y
+
+def fmod(x,y):
+    if isinstance(y, int):
+        y=paddle.Tensor(np.array([y],dtype="float32"))
+    return  convertTensor(paddle.floor_mod(x,y))
+
+
+def  allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
+    if input.shape!=other.shape:
+        other=paddle.expand_as(other,input)
+
+    return convertTensor(paddle.allclose(input, other, rtol , atol , equal_nan ))
+
+def clamp(x, min=None, max=None):
+    return convertTensor(paddle.clip(x,min=min,max=max))
+
+
+def einsum(equation, *operands):
+    return convertTensor(np.einsum(equation,*[x.numpy() for x in operands]))
+
+
+def repeat(x, *size):
+    if isinstance(size[0], Iterable):
+        size = size[0]
+    x = paddle.tile(x, size)
+    return convertTensor(x)
+
+def rot90(input, k=1, dims=[1,0]):
+    assert k==1, "no implement for k>1"
+    return paddle.transpose(input,dims)[::-1]
+
+def cos(x):
+    return convertTensor(paddle.cos(x))
+
+
+def log_softmax(x,dim=-1):
+    return  convertTensor(paddle.nn.functional.log_softmax(x,axis=dim))
