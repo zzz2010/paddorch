@@ -111,7 +111,7 @@ class Dataloader(object):
                     return len(self.data)
 
             def collate_fn(batch_examples):
-                inputs = np.array(batch_examples, dtype="int64")
+                inputs = np.array(batch_examples, dtype="int32")
                 return inputs
 
             dataset = MyDataset()

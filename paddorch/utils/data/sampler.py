@@ -84,7 +84,7 @@ class DistributedBatchSampler(BatchSampler):
 
                 def __getitem__(self, idx):
                     image = np.random.random([784]).astype('float32')
-                    label = np.random.randint(0, 9, (1, )).astype('int64')
+                    label = np.random.randint(0, 9, (1, )).astype('int32')
                     return image, label
 
                 def __len__(self):
@@ -209,7 +209,7 @@ class DistributedBatchSampler(BatchSampler):
 
                     def __getitem__(self, idx):
                         image = np.random.random([784]).astype('float32')
-                        label = np.random.randint(0, 9, (1, )).astype('int64')
+                        label = np.random.randint(0, 9, (1, )).astype('int32')
                         return image, label
 
                     def __len__(self):

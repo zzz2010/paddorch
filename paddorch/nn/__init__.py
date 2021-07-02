@@ -811,7 +811,7 @@ class RNNCellBase(Module):
             if sys.version_info < (3,):
                 integer_types = (
                     int,
-                    "int64")
+                    "int32")
             else:
                 integer_types = (int,)
             """For shape, list/tuple of integer is the finest-grained objection"""

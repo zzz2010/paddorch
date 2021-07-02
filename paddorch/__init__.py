@@ -21,7 +21,7 @@ __version__='0.2.0'
 double="float32"
 bool="bool"
 float="float32"
-long="int64"
+long="int32"
 
 def chunk(self, chunks, dim):
     slices = paddle.unstack(self, axis=dim, num=None)
@@ -82,7 +82,7 @@ def matmul(x,y,transpose_y=False):
 def tensor(x,dtype=np.float32):
     if isinstance(x,list):
         x=paddle.to_tensor(x,dtype=dtype,stop_gradient=True)
-    if isinstance(x,int) or isinstance(x,np.int64):
+    if isinstance(x,int) or isinstance(x,np.int32):
         return convertTensor(Tensor([x]).astype(dtype))
     return convertTensor(Tensor(x).astype(dtype))
 
@@ -140,7 +140,7 @@ def linspace(start, stop, num, dtype="float32"):
     return Tensor(fluid.layers.linspace(start, stop, num, dtype))
 
 def randint(low, high, size=[1] ,
-            dtype="int64", requires_grad=False):
+            dtype="int32", requires_grad=False):
     return Tensor(paddle.randint(low=low, high=high, shape= size, dtype=dtype, name=None))
 
 def rand(*shape):
@@ -206,8 +206,8 @@ def LongTensor(x):
     if isinstance(x,int):
         return Tensor(paddle.to_tensor([x]))
     if isinstance(x,list):
-        x=paddle.to_tensor(x,dtype="int64")
-    return convertTensor(Tensor(x ).astype("int64"))
+        x=paddle.to_tensor(x,dtype="int32")
+    return convertTensor(Tensor(x ).astype("int32"))
 
 def stack(inputs,dim=0,out=None):
     x= paddle.stack(inputs ,axis=dim )
@@ -217,7 +217,7 @@ def stack(inputs,dim=0,out=None):
         paddle.assign(x,out)
         return out
 def arange(*args,**kwargs):
-    return paddorch.Tensor(np.arange(*args,**kwargs).astype("int64"))
+    return paddorch.Tensor(np.arange(*args,**kwargs).astype("int32"))
     # if end==0:
     #     return []
     # return varbase_to_tensor(paddle.paddle.range(0, end, step, dtype))
@@ -430,7 +430,7 @@ def exp(x):
 
 
 def index_select(x, dim, index):
-    return convertTensor(paddle.index_select(x, index.astype("int64"), axis=dim))
+    return convertTensor(paddle.index_select(x, index.astype("int32"), axis=dim))
 
 
 def unqueeze(x, dim):
@@ -458,7 +458,7 @@ def sort(x, axis=1, descending=False):
 
 
 def randperm(n):
-    return convertTensor(paddle.randperm(n, dtype='int64', name=None))
+    return convertTensor(paddle.randperm(n, dtype='int32', name=None))
 
 
 def relu(x):

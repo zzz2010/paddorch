@@ -29,7 +29,7 @@ def default_collate_fn(batch):
     # dataset has only 1 field
     if isinstance(sample, np.ndarray):
         return   np.stack(batch, axis=0)  #[np.stack(batch, axis=0)]
-    if isinstance(sample, int) or isinstance(sample, np.int64):
+    if isinstance(sample, int) or isinstance(sample, np.int32):
         return  np.array(batch)
 
     if isinstance(sample, fluid.core.VarBase):
@@ -87,7 +87,7 @@ class IterableDataset(Dataset):
                 def __iter__(self):
                     for i in range(self.num_samples):
                         image = np.random.random([784]).astype('float32')
-                        label = np.random.randint(0, 9, (1, )).astype('int64')
+                        label = np.random.randint(0, 9, (1, )).astype('int32')
                         yield image, label
 
             dataset = RandomDataset(10)

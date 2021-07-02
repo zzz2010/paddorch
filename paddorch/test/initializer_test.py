@@ -7,7 +7,7 @@ from paddorch.sparse import  FloatTensor
 import numpy as np
 place = fluid.CPUPlace()
 with fluid.dygraph.guard(place=place):
-    i = torch.from_numpy(np.array([[0, 2], [1, 0], [1, 2]]) ).astype("int64")
+    i = torch.from_numpy(np.array([[0, 2], [1, 0], [1, 2]]) ).astype("int32")
     v = paddle.Tensor(np.array([3, 4, 5])).astype("float32")
     x=FloatTensor(i,v,(2,3))
     print(x)
