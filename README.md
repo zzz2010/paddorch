@@ -12,7 +12,7 @@ pytorch code without much change.
 
 ## Examples
 
-I used this library to reimplement below projects
+Paddorch is used to reimplement below projects
 
 
  1. [BigGAN: Large Scale GAN Training for High Fidelity Natural Image Synthesis](https://github.com/zzz2010/BigGAN-paddle)
