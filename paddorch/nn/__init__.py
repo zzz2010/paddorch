@@ -97,6 +97,12 @@ class Module(Layer):
     def modules(self):
         return self.sublayers()
 
+    # def __getattr__(self, name):
+    #     try:
+    #         return super(Module, self).__getattr__()
+    #     except:
+    #         return None
+
     def clone(self):
         import copy
         new_obj= Module()
@@ -322,6 +328,7 @@ class Embedding(paddle.nn.Embedding,Module):
           )
         self.norm_type=norm_type
         self.max_norm=max_norm
+        self.padding_idx=padding_idx
 
 
     def forward(self, input):

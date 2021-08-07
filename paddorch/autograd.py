@@ -31,7 +31,7 @@ class Function(Layer):  # type: ignore
     @classmethod
     def apply(cls, *args,**kwargs):
         function_inst=cls()
-        return function_inst.forward( *args,**kwargs)
+        return function_inst.forward(function_inst, *args,**kwargs)
 
     def save_for_backward(self,*args):
         for a in args:

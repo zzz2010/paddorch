@@ -464,4 +464,4 @@ class InceptionV3(nn.Module):
         x = self.block4(x)
         # print("paddle block4", torch.mean(x).numpy())
         x = torch.varbase_to_tensor(x)
-        return x.view(x.size(0), -1)
+        return x.view(x.shape[0], -1)

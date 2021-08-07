@@ -15,6 +15,8 @@ from . import optim
 from . import  vision
 from . import utils
 from . import sparse
+from . import distributed
+from paddle import jit
 from paddle import argmax,argsort,argmin
 __version__='0.2.0'
 
@@ -22,6 +24,11 @@ double="float32"
 bool="bool"
 float="float32"
 long="int32"
+dtype=paddle.get_default_dtype()
+
+def _softmax_backward_data(*args):
+    print("_softmax_backward_data not implemented yet")
+    return 0
 
 def chunk(self, chunks, dim):
     slices = paddle.unstack(self, axis=dim, num=None)
@@ -73,7 +80,8 @@ def split(x,batch_size,dim=0):
 
 def empty(*size):
     return zeros(size)
-
+def empty_like(x):
+    return  empty(*x.shape)
 def matmul(x,y,transpose_y=False):
     if isinstance(x,paddorch.sparse.FloatTensor):
         return paddorch.sparse.mm(x,y)
@@ -187,6 +195,23 @@ def topk(input, k, dim=None, largest=True, sorted=True,  out=None)  :
     return vals,inds
 
 
+def gather(x,dim,index):
+    index_shape=index.shape
+    index_flatten=index.flatten()
+    if dim<0:
+        dim=len(x.shape)+dim
+    nd_index=[]
+    for k in range(len(x.shape)):
+        if k==dim:
+            nd_index.append(index_flatten)
+        else:
+            reshape_shape=[1]*len(x.shape)
+            reshape_shape[k]=x.shape[k]
+            dim_index=paddle.expand( paddle.reshape(paddle.arange(x.shape[k]), reshape_shape), index_shape).flatten()
+            nd_index.append(dim_index)
+    ind2 = paddle.stack(nd_index).transpose([1, 0])
+    paddle_out = paddle.gather_nd(x, ind2).reshape(index_shape)
+    return convertTensor(paddle_out)
 
 def Size(size):
     return size
@@ -216,7 +241,7 @@ def stack(inputs,dim=0,out=None):
     else:
         paddle.assign(x,out)
         return out
-def arange(*args,**kwargs):
+def arange(*args,device="",**kwargs):
     return paddorch.Tensor(np.arange(*args,**kwargs).astype("int32"))
     # if end==0:
     #     return []
@@ -293,10 +318,10 @@ def cov(m, rowvar=False, inplace=False):
         raise ValueError('m has more than 2 dimensions')
     if m.dim() < 2:
         m = m.view(1, -1)
-    if not rowvar and m.size(0) != 1:
+    if not rowvar and m.shape[0] != 1:
         m = m.permute(1, 0)
     # m = m.type(torch.double)  # uncomment this line if desired
-    fact = 1.0 / (m.size(1) - 1)
+    fact = 1.0 / (m.shape[1] - 1)
     if inplace:
         m -= mean(m, dim=1, keepdim=True)
     else:

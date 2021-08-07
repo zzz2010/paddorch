@@ -3,6 +3,7 @@ from paddorch.utils.data import IterableDataset
 import paddorch as torch
 import math
 import numpy as np
+from paddle.io import RandomSampler,Sampler
 
 class WeightedRandomSampler(BatchSampler):
     def __init__(self, weights,batch_size, num_samples=None, replacement=True):
@@ -27,6 +28,20 @@ class WeightedRandomSampler(BatchSampler):
 
     def __len__(self):
         return self.num_samples
+
+
+
+class SequentialSampler(Sampler):
+
+    def __init__(self, dataset):
+        self.dataset = dataset
+        return
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __iter__(self):
+        return iter(range(len(self)))
 
 
 class _InfiniteIterableSampler(object):

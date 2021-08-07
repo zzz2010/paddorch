@@ -39,11 +39,11 @@ def make_grid(tensor, nrow=8, padding=2,
     if tensor.dim() == 2:  # single image H x W
         tensor = tensor.unsqueeze(0)
     if tensor.dim() == 3:  # single image
-        if tensor.size(0) == 1:  # if single-channel, convert to 3-channel
+        if tensor.shape[0] == 1:  # if single-channel, convert to 3-channel
             tensor = torch.cat((tensor, tensor, tensor), 0)
         tensor = tensor.unsqueeze(0)
 
-    if tensor.dim() == 4 and tensor.size(1) == 1:  # single-channel images
+    if tensor.dim() == 4 and tensor.shape[1] == 1:  # single-channel images
         tensor = torch.cat((tensor, tensor, tensor), 1)
 
     if normalize is True:
@@ -68,15 +68,15 @@ def make_grid(tensor, nrow=8, padding=2,
         else:
             norm_range(tensor, range)
 
-    if tensor.size(0) == 1:
+    if tensor.shape[0] == 1:
         return tensor.squeeze(0)
 
     # make the mini-batch of images into a grid
-    nmaps = tensor.size(0)
+    nmaps = tensor.shape[0]
     xmaps = min(nrow, nmaps)
     ymaps = int(math.ceil(float(nmaps) / xmaps))
-    height, width = int(tensor.size(2) + padding), int(tensor.size(3) + padding)
-    num_channels = tensor.size(1)
+    height, width = int(tensor.shape[2] + padding), int(tensor.size(3) + padding)
+    num_channels = tensor.shape[1]
     # grid = tensor.new_full((num_channels, height * ymaps + padding, width * xmaps + padding), pad_value)
     grid =  np.zeros((num_channels, height * ymaps + padding, width * xmaps + padding))+pad_value
     k = 0

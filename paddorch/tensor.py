@@ -15,6 +15,7 @@ def varbase_to_tensor(x):
     return convertTensor(x)
 
 
+
 def new_full(size, fill_value, dtype=None,  requires_grad=False):
     if dtype is None:
         dtype='float32'
@@ -27,14 +28,15 @@ def convertTensor(x):
     if isinstance(x,paddorch.Tensor):
         return x
     ret=  paddorch.Tensor(x)
+
     return ret
 
 # class Tensor(dygraph.core.VarBase):
 class Tensor(paddle.Tensor  ):
     def __init__(self,*args, **kwargs):
         if isinstance(args[0],dygraph.core.VarBase) or isinstance(args[0],dygraph.core.LoDTensor):
-
-            super(Tensor, self).__init__( args[0].dtype,args[0].shape,args[0].name,dygraph.core.VarDesc.VarType.LOD_TENSOR, True)
+            dtype=args[0].dtype
+            super(Tensor, self).__init__( dtype,args[0].shape,args[0].name,dygraph.core.VarDesc.VarType.LOD_TENSOR, True)
 
             fluid.layers.assign(args[0],self)
         elif isinstance(args[0],Iterable):
@@ -203,7 +205,12 @@ class Tensor(paddle.Tensor  ):
         return torch.norm(self,p=p,dim=dim,keepdim=keepdim)
 
     def expand(self,*sizes):
+        if isinstance(sizes[0],Iterable):
+            sizes=sizes[0]
         ##handle -1 case
+        if len(sizes)>len(self.shape):
+            for _ in range(len(sizes)-len(self.shape)):
+                self=self.unsqueeze(dim=0)
         expand_times=[ x//y if x>=y else 1 for x,y in zip(sizes,self.shape) ]
         x= varbase_to_tensor(paddle.fluid.layers.expand(self, expand_times, name=None))
         return x
@@ -233,6 +240,7 @@ class Tensor(paddle.Tensor  ):
         return  self
 
     def permute(self,*perm):
+        perm=[ len(perm)+x if x<0 else x for x in perm] ##not allow negative values
         x=paddle.transpose(self,perm)
 
         return varbase_to_tensor(x)
@@ -374,7 +382,14 @@ class Tensor(paddle.Tensor  ):
 
     def __getitem__(self,args):
         from typing import   Iterable
-
+        ##handle case ok expand dimension
+        args2=list(args)
+        for j in range(len(args)):
+            k=len(args)-j-1
+            if args[k] is None:
+                self.unsqueeze_(axis=k)
+            args2[k]=slice(None,None,None)
+        args=tuple(args2)
         if isinstance(args, np.ndarray):
             # print(max(args),min(args),self.shape,len(args),len(set(args)) )
             args=paddorch.from_numpy(args).long()
@@ -390,7 +405,6 @@ class Tensor(paddle.Tensor  ):
                 return convertTensor(paddle.index_select(self[args[0]],sel_indices,axis=1))
             elif isinstance(args[0],paddle.Tensor):
                     return convertTensor(super(Tensor, self).__getitem__(args[0])[args[1]])
-
 
         return convertTensor(super(Tensor, self).__getitem__(args))
 
@@ -495,6 +509,10 @@ class Tensor(paddle.Tensor  ):
         new_values=paddle.where(mask,self,paddle.ones(self.shape)*value)
         fluid.layers.assign(new_values, self)
         return self
+    def masked_fill(self, mask,value):
+        mask=paddle.expand_as(mask,self)
+        new_values=paddle.where(mask,self,paddle.ones(self.shape)*value)
+        return new_values
 
     def argmax(self,dim=0,keepdim=False):
         return convertTensor(paddle.argmax(self,axis=dim,keepdim=keepdim))
@@ -522,3 +540,15 @@ class Tensor(paddle.Tensor  ):
         # Restore instance attributes (i.e., filename and lineno).
         self.__init__(paddle.to_tensor(state['value'],dtype=state['dtype'] )  )
 
+    def byte(self):
+        return  self.astype("int32") ##paddle not support uin18
+
+    def bernoulli_(self,p):
+        paddorch.copy(paddle.bernoulli(paddle.ones_like(self)*p, name=None), self)
+        return self
+
+    def bool(self):
+        return self.astype("bool")
+
+    def chunk(self, chunks, dim=0 ):
+        return  super(Tensor, self).chunk(chunks,axis=dim)

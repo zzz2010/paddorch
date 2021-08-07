@@ -26,14 +26,14 @@ import paddorch.nn.functional as F
 
 def get_preds_fromhm(hm):
     max, idx = torch.max(
-        hm.view(hm.size(0), hm.size(1), hm.size(2) * hm.size(3)), 2)
+        hm.view(hm.shape[0], hm.shape[1], hm.shape[2] * hm.size(3)), 2)
     idx += 1
-    preds = idx.view(idx.size(0), idx.size(1), 1).repeat(1, 1, 2).float()
+    preds = idx.view(idx.shape[0], idx.shape[1], 1).repeat(1, 1, 2).float()
     preds[..., 0].apply_(lambda x: (x - 1) % hm.size(3) + 1)
-    preds[..., 1].add_(-1).div_(hm.size(2)).floor_().add_(1)
+    preds[..., 1].add_(-1).div_(hm.shape[2]).floor_().add_(1)
 
-    for i in range(preds.size(0)):
-        for j in range(preds.size(1)):
+    for i in range(preds.shape[0]):
+        for j in range(preds.shape[1]):
             hm_ = hm[i, j, :]
             pX, pY = int(preds[i, j, 0]) - 1, int(preds[i, j, 1]) - 1
             if pX > 0 and pX < 63 and pY > 0 and pY < 63:
@@ -265,10 +265,10 @@ class FAN(nn.Module):
         ''' outputs landmarks of x.shape '''
         heatmaps = self.get_heatmap(x, b_preprocess=False)
         landmarks = []
-        for i in range(x.size(0)):
+        for i in range(x.shape[0]):
             pred_landmarks = get_preds_fromhm(heatmaps[i].unsqueeze(0))
             landmarks.append(pred_landmarks)
-        scale_factor = x.size(2) // heatmaps.size(2)
+        scale_factor = x.shape[2] // heatmaps.shape[2]
         landmarks = torch.cat(landmarks) * scale_factor
         return landmarks
 
