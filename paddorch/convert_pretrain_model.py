@@ -59,32 +59,35 @@ def load_pytorch_pretrain_model_remove_prefix(paddle_model, pytorch_state_dict,p
     for key in paddle_weight.keys():
         if ".cell" in key:
             continue
-        paddle_key_list.append(key)
+        paddle_key_list.append(key.replace(pytorch_prefix,""))
     torch_key_set=set(torch_key_list)
     paddle_key_set=set(paddle_key_list)
     paddle_unique_keys=paddle_key_set-torch_key_set
 
-    _fast_init=True
-    if _fast_init:
-        # retrieve unintialized modules and initialize
-        missingkeys=torch_key_set-paddle_key_set
-        print("torch unique key , checking mis-alignment")
-        print(missingkeys)
-        unintialized_modules = paddle_model.retrieve_modules_from_names(
-            missingkeys, add_prefix="", remove_prefix=""
-        )
-        for module in unintialized_modules:
-            paddle_model._init_weights(module)
+    # _fast_init=True
+    # if _fast_init:
+    #     # retrieve unintialized modules and initialize
+    #     missingkeys=torch_key_set-paddle_key_set
+    #     print("torch unique key , checking mis-alignment")
+    #     print(missingkeys)
+    #     unintialized_modules = paddle_model.retrieve_modules_from_names(
+    #         missingkeys, add_prefix="", remove_prefix=""
+    #     )
+    #     for module in unintialized_modules:
+    #         paddle_model._init_weights(module)
 
     paddle_weight = paddle_model.state_dict()
     for torch_key in torch_key_set:
         # if "linears_prediction.4" not in paddle_key or "weight" not in paddle_key:
         #     continue
         paddle_key=torch_key
+        if pytorch_prefix+paddle_key in paddle_weight:
+            paddle_key=pytorch_prefix+paddle_key
         if paddle_key not in paddle_weight:
             continue
         if pytorch_prefix+torch_key in pytorch_state_dict:
             torch_key=pytorch_prefix+torch_key
+
         # print(torch_key, paddle_key, pytorch_state_dict[torch_key].shape,paddle_weight[paddle_key].shape)
         if len(pytorch_state_dict[torch_key].shape)==0:
             continue
