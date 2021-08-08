@@ -6,6 +6,9 @@ from collections import defaultdict
 import paddle
 # mypy doesn't understand `with_metaclass` from torch._six
 class Function(Layer):  # type: ignore
+    '''
+    the backward function of this class CAN NOT declare as staticmethod, remove @staticmethod
+    '''
     def __init__(self , name_scope=None, dtype=core.VarDesc.VarType.FP32):
         super(Function, self).__init__(name_scope,dtype)
         self.saved_tensors=[]
@@ -19,13 +22,13 @@ class Function(Layer):  # type: ignore
                     grad=0
                 grad.set_value(self.grad_cache[name]+grad)
             else:
-                print(name,"NOT found")
+                print(name,"NOT found in grad_cache")
             return grad
         helper=var.register_hook(set_grad)
         self.hook_helper[name]=helper
     def delete_hook(self,name):
         if name in self.hook_helper:
-            self.hook_helper[name] .remove()
+            self.hook_helper[name].remove()
             del self.grad_cache[name]
 
     @classmethod
@@ -34,6 +37,7 @@ class Function(Layer):  # type: ignore
         return function_inst.forward(function_inst, *args,**kwargs)
 
     def save_for_backward(self,*args):
+        return
         for a in args:
             self.saved_tensors.append(a)
 

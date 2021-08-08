@@ -382,14 +382,7 @@ class Tensor(paddle.Tensor  ):
 
     def __getitem__(self,args):
         from typing import   Iterable
-        ##handle case ok expand dimension
-        args2=list(args)
-        for j in range(len(args)):
-            k=len(args)-j-1
-            if args[k] is None:
-                self.unsqueeze_(axis=k)
-            args2[k]=slice(None,None,None)
-        args=tuple(args2)
+
         if isinstance(args, np.ndarray):
             # print(max(args),min(args),self.shape,len(args),len(set(args)) )
             args=paddorch.from_numpy(args).long()
@@ -405,7 +398,15 @@ class Tensor(paddle.Tensor  ):
                 return convertTensor(paddle.index_select(self[args[0]],sel_indices,axis=1))
             elif isinstance(args[0],paddle.Tensor):
                     return convertTensor(super(Tensor, self).__getitem__(args[0])[args[1]])
-
+        ##handle case using None to expand dimension
+        if isinstance(args,Iterable):
+            args2=list(args)
+            for j in range(len(args)):
+                k=len(args)-j-1
+                if args[k] is None:
+                    self.unsqueeze_(axis=k)
+                    args2[k]=slice(None,None,None)
+            args=tuple(args2)
         return convertTensor(super(Tensor, self).__getitem__(args))
 
 
@@ -507,9 +508,14 @@ class Tensor(paddle.Tensor  ):
     def masked_fill_(self, mask,value):
         mask=paddle.expand_as(mask,self)
         new_values=paddle.where(mask,self,paddle.ones(self.shape)*value)
-        fluid.layers.assign(new_values, self)
+        paddorch.copy(new_values,self)
+
         return self
     def masked_fill(self, mask,value):
+        mask_float= mask.astype("float32")
+        result = self *(1-mask_float) + mask_float*value
+        return  result
+
         mask=paddle.expand_as(mask,self)
         new_values=paddle.where(mask,self,paddle.ones(self.shape)*value)
         return new_values
@@ -552,3 +558,10 @@ class Tensor(paddle.Tensor  ):
 
     def chunk(self, chunks, dim=0 ):
         return  super(Tensor, self).chunk(chunks,axis=dim)
+
+
+    def __invert__(self):
+        return paddle.logical_not(self)
+
+    def split(x, num_or_sections, dim=0):
+        return torch.split(x, num_or_sections, dim)

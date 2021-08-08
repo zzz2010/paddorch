@@ -15,6 +15,7 @@ import numbers
 import paddle
 import paddle.fluid as fluid
 from paddle import framework
+import itertools
 
 from paddle.nn import initializer as I
 from paddle.fluid.dygraph import Layer, LayerList
@@ -72,11 +73,22 @@ class Module(Layer):
         self.register_forward_post_hook(forward_post_hook)
         self.register_forward_pre_hook(forward_pre_hook)
 
+
     def eval(self):
         super(Module, self).eval()
         return self
     def load_state_dict(self,new_dict, strict=True):
         self.set_dict(new_dict,   use_structured_name=True)
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        self.set_dict(state_dict, use_structured_name=True)
+
+
+    def named_modules(self,
+                        memo=None, prefix='', remove_duplicate=True):
+
+        return  super().named_sublayers(prefix=prefix)
 
     def register_parameter(self,name,value):
         self.__setattr__(name,Parameter(value))

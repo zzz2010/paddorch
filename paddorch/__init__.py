@@ -26,9 +26,11 @@ float="float32"
 long="int32"
 dtype=paddle.get_default_dtype()
 
-def _softmax_backward_data(*args):
+def _softmax_backward_data(grad_output, output,  dim, self):
     print("_softmax_backward_data not implemented yet")
-    return 0
+    print(grad_output.shape, output.shape)
+    return paddle.zeros_like(grad_output)
+
 
 def chunk(self, chunks, dim):
     slices = paddle.unstack(self, axis=dim, num=None)
@@ -597,3 +599,7 @@ def cos(x):
 
 def log_softmax(x,dim=-1):
     return  convertTensor(paddle.nn.functional.log_softmax(x,axis=dim))
+
+
+def erf(x):
+    return  convertTensor(paddle.erf(x))
