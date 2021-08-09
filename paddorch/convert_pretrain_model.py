@@ -98,5 +98,7 @@ def load_pytorch_pretrain_model_remove_prefix(paddle_model, pytorch_state_dict,p
             new_weight_dict[paddle_key]=pytorch_state_dict[torch_key].cpu().detach().numpy().astype("float32")
         else:
             new_weight_dict[paddle_key] = pytorch_state_dict[torch_key].cpu().detach().numpy().T.astype("float32")
+        del pytorch_state_dict[torch_key] ##save memory
     paddle_model.set_dict(new_weight_dict)
+    del new_weight_dict
     return paddle_model.state_dict()

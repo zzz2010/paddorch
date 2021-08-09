@@ -166,7 +166,9 @@ class Conv2d(dygraph.Conv2D,Module):
 
 
 
-
+class Conv1d(paddle.nn.Conv1D,Module):
+    def __init__(self,*args,**kwargs):
+        super(Conv1d, self).__init__(*args,**kwargs)
 
 class InstanceNorm2d(Module):
     '''
@@ -1092,10 +1094,14 @@ class LayerNorm(Module ):
                  epsilon=1e-05,
                  weight_attr=None,
                  bias_attr=None,
+                 elementwise_affine=True,
                  name=None):
         super(LayerNorm, self).__init__()
         if isinstance(normalized_shape, numbers.Integral):
             normalized_shape = [normalized_shape]
+        if not elementwise_affine:
+            weight_attr=False
+            bias_attr=False
 
         self._normalized_shape = list(normalized_shape)
         self._epsilon = epsilon

@@ -603,3 +603,7 @@ def log_softmax(x,dim=-1):
 
 def erf(x):
     return  convertTensor(paddle.erf(x))
+
+
+def addmm(*args,**kwargs):
+    return  convertTensor(paddle.addmm(*args,**kwargs))
