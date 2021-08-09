@@ -47,7 +47,9 @@ def trace(x, offset=0, dim1=0, dim2=1, out=None):
 
 def from_numpy(x):
     return Tensor(x)
-def bmm(x,y):
+def bmm(x,y,transpose=False):
+    if transpose:
+        y=y.transpose( len(y.shape)-1,len(y.shape)-2 )
     return Tensor(paddle.bmm(x,y))
 
 def eye(n , m=None ):
