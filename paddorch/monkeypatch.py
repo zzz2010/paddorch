@@ -37,7 +37,7 @@ paddle.Tensor.mul_=paddorch.Tensor.mul_
 paddle.Tensor.permute=paddorch.Tensor.permute
 paddle.Tensor.transpose=paddorch.Tensor.transpose
 paddle.Tensor.to=paddorch.Tensor.to
-paddle.Tensor.type=paddorch.Tensor.type
+# paddle.Tensor.type=paddorch.Tensor.type
 paddle.Tensor.contiguous=paddorch.Tensor.contiguous
 paddle.Tensor.flip=paddorch.Tensor.flip
 paddle.Tensor.view=paddorch.Tensor.view
@@ -57,6 +57,8 @@ paddle.Tensor.view_as=paddorch.Tensor.view_as
 paddle.Tensor.clamp=paddorch.Tensor.clamp
 paddle.Tensor.requires_grad_=paddorch.Tensor.requires_grad_
 paddle.Tensor.set_gradient=paddorch.Tensor.set_gradient
+paddle.Tensor.grad_orig=paddle.Tensor.grad
+paddle.Tensor.grad=paddorch.Tensor.grad
 paddle.Tensor.backward_orig=paddle.Tensor.backward
 paddle.Tensor.backward=paddorch.Tensor.backward
 paddle.Tensor.new_zeros=paddorch.Tensor.new_zeros
@@ -76,7 +78,7 @@ paddle.Tensor.bool=paddorch.Tensor.bool
 paddle.Tensor.chunk=paddorch.Tensor.chunk
 paddle.Tensor.__invert__=paddorch.Tensor.__invert__
 paddle.Tensor.split=paddorch.Tensor.split
-paddle.Tensor.device=""
+paddle.Tensor.device=paddorch.Tensor.device
 # from functools import partial
 # def monkeypatch(paddle_tensor):
 #     # paddle_tensor.new_full = partial(paddorch.Tensor.new_full, paddle_tensor)

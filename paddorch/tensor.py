@@ -59,7 +59,6 @@ class Tensor(paddle.Tensor  ):
             super(Tensor, self).__init__(*args, **kwargs)
             # self=self #dygraph.core.VarBase(*args, **kwargs)
 
-        self.device=str(self.place)
         # self.block=self.block
         # self.dtype=self.dtype
         # self.name=self.name
@@ -68,6 +67,9 @@ class Tensor(paddle.Tensor  ):
         # self.stop_gradient=self.stop_gradient
         # self.type=self.type
 
+    @property
+    def device(self):
+        return str(self.place)
     def dim(self):
         return len(self.shape)
 
@@ -479,6 +481,8 @@ class Tensor(paddle.Tensor  ):
             shape = super(Tensor, self).shape
         else:
             shape= self.shape_orig
+            if isinstance(self,paddle.fluid.framework.ParamBase):
+                return shape
         if isinstance(shape,int):
             return tuple(shape)
         if isinstance(shape[0],Iterable):
@@ -488,9 +492,12 @@ class Tensor(paddle.Tensor  ):
 
     @property
     def grad(self):
-        if super(Tensor, self).grad is None:
-            return None
-        return convertTensor(super(Tensor, self).grad)
+        if getattr(self,"grad_orig",None) is None:
+            if super(Tensor, self).grad is None:
+                return None
+            return convertTensor(super(Tensor, self).grad)
+        else:
+            return self.grad_orig
 
     # def get_tensor(self):
     #     if self.stop_gradient:
