@@ -10,7 +10,7 @@ import paddorch.nn.init
 from paddle.fluid import dygraph
 import numpy as np
 from paddle import isinf,isnan,isfinite
-from paddorch.tensor import varbase_to_tensor,Tensor,convertTensor
+from paddorch.tensor import varbase_to_tensor,Tensor,convertTensor,enable_monkeypatch
 from . import optim
 from . import  vision
 from . import utils
@@ -18,6 +18,12 @@ from . import sparse
 from . import distributed
 from paddle import jit
 from paddle import argmax,argsort,argmin
+
+
+
+
+if enable_monkeypatch:
+    from . import monkeypatch
 __version__='0.2.0'
 
 double="float32"
@@ -213,7 +219,8 @@ def gather(x,dim,index):
             reshape_shape[k]=x.shape[k]
             dim_index=paddle.expand( paddle.reshape(paddle.arange(x.shape[k]), reshape_shape), index_shape).flatten()
             nd_index.append(dim_index)
-    ind2 = paddle.stack(nd_index).transpose([1, 0])
+    ind2 = paddle.transpose(paddle.stack(nd_index),[1, 0])
+    # ind2 = paddle.stack(nd_index).transpose([1, 0])
     paddle_out = paddle.gather_nd(x, ind2).reshape(index_shape)
     return convertTensor(paddle_out)
 
@@ -235,8 +242,8 @@ def LongTensor(x):
     if isinstance(x,int):
         return Tensor(paddle.to_tensor([x]))
     if isinstance(x,list):
-        x=paddle.to_tensor(x,dtype="int32")
-    return convertTensor(Tensor(x ).astype("int32"))
+        x=paddle.to_tensor(x,dtype="int64")
+    return convertTensor( x.astype("int64"))
 
 def stack(inputs,dim=0,out=None):
     x= paddle.stack(inputs ,axis=dim )

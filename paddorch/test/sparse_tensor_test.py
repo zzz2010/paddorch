@@ -1,5 +1,6 @@
 
-
+import paddle
+paddle.set_device("cpu")
 import torch
 N_dim=200
 N_dim2=N_dim
@@ -23,14 +24,14 @@ b=paddorch.from_numpy(b.detach().numpy())
 b_param=paddorch.nn.Parameter(b)
 b.stop_gradient=False
 a.values.stop_gradient=False
-y = paddorch.sparse.mm(a, b,fast=False)
+y = paddorch.sparse.mm(a, b )
 print("max diff",np.max(np.abs(torch_y.detach().numpy()-y.numpy( ))))
 c=a.to_dense()
 
 import time
 before=time.time()
 for _ in range(6):
-    y = paddorch.sparse.mm(a, b,fast=False)
+    y = paddorch.sparse.mm(a, b )
 
     # y = paddorch.mm(c, b )
 

@@ -71,7 +71,7 @@ with fluid.dygraph.guard(place=place):
     import time
     before=time.time()
     for _ in range(6):
-        y = paddorch.sparse.mm(a, b,fast=False)
+        y = paddorch.sparse.mm(a, b )
 
         b=paddorch.cat([b,y],dim=1)
         break

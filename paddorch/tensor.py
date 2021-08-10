@@ -11,6 +11,9 @@ import paddorch as torch
 from paddle.fluid import dygraph
 import numpy as np
 from typing import   Iterable
+
+enable_monkeypatch=True
+
 def varbase_to_tensor(x):
     return convertTensor(x)
 
@@ -25,6 +28,9 @@ def new_full(size, fill_value, dtype=None,  requires_grad=False):
     return x
 
 def convertTensor(x):
+    if enable_monkeypatch:
+        if isinstance(x,paddle.Tensor):
+            return  x
     if isinstance(x,paddorch.Tensor):
         return x
     ret=  paddorch.Tensor(x)
@@ -34,6 +40,7 @@ def convertTensor(x):
 # class Tensor(dygraph.core.VarBase):
 class Tensor(paddle.Tensor  ):
     def __init__(self,*args, **kwargs):
+
         if isinstance(args[0],dygraph.core.VarBase) or isinstance(args[0],dygraph.core.LoDTensor):
             dtype=args[0].dtype
             super(Tensor, self).__init__( dtype,args[0].shape,args[0].name,dygraph.core.VarDesc.VarType.LOD_TENSOR, True)
@@ -247,6 +254,8 @@ class Tensor(paddle.Tensor  ):
 
     def transpose(self,*perm):
         # if len(perm)==2 and len(self.shape)>2:
+        if isinstance(perm[0],Iterable):
+            return paddle.transpose(self,perm[0])
         ###only swap two axis
         perm2=list(range(len(self.shape)))
         a=perm2[perm[0]]
@@ -448,8 +457,11 @@ class Tensor(paddle.Tensor  ):
                 helper=self.register_hook(set_grad)
             except:
                 pass
+        if getattr(self,"backward_orig",None) is None:
+            ret = super(Tensor, self).backward(retain_graph=retain_graph)
+        else:
+            ret= self.backward_orig(retain_graph=retain_graph)
 
-        ret = super(Tensor, self).backward(retain_graph=retain_graph)
 
         if gradient is not None:
             try:  ##only work in the dev version
@@ -460,7 +472,13 @@ class Tensor(paddle.Tensor  ):
 
     @property
     def shape(self):
-        shape=super(Tensor, self).shape
+        # shape=paddle.shape(self)
+        # if not isinstance(self,paddorch.Tensor):
+        #     return shape
+        if getattr(self,"shape_orig",None) is None:
+            shape = super(Tensor, self).shape
+        else:
+            shape= self.shape_orig
         if isinstance(shape,int):
             return tuple(shape)
         if isinstance(shape[0],Iterable):
@@ -557,7 +575,8 @@ class Tensor(paddle.Tensor  ):
         return self.astype("bool")
 
     def chunk(self, chunks, dim=0 ):
-        return  super(Tensor, self).chunk(chunks,axis=dim)
+        return paddle.chunk(self,chunks,axis=dim)
+        # return  super(Tensor, self).chunk(chunks,axis=dim)
 
 
     def __invert__(self):
