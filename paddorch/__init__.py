@@ -1,6 +1,5 @@
 import paddle.fluid as fluid
 import paddle
-import torch
 
 from . import cuda
 from . import  nn
