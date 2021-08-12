@@ -170,7 +170,8 @@ def einsum(equation, *operands):
         right = paddle.reshape(
             paddle.transpose(
                 right, perm=right_perm), (batch_size, summed_size, right_size))
-        result = paddle.matmul(left.clone(), right)
+
+        result = paddle.matmul(left , right)
         result = paddle.reshape(result, out_shape)
         result = paddle.transpose(result, output_perm)
 
@@ -345,6 +346,7 @@ def einsum(equation, *operands):
                 j] >= num_output_dims:
                 sum_dims.append(idxes_to_output_dims[j])
         result = _mul_sum(result, preprocessed_operands[i], sum_dims)
+
 
     squeeze_dims = [
         i for i in range(len(result.shape) - 1, num_output_dims - 1, -1)

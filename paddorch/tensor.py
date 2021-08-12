@@ -187,7 +187,7 @@ class Tensor(paddle.Tensor  ):
 
     def clone(self):
         y = self.new_full(self.shape, 0,dtype=str(self.dtype).replace("VarType.","").lower().replace("paddle.","").replace("fp32","float32") )
-        fluid.layers.assign(self, y)
+        paddorch.copy(self, y)
         y.stop_gradient=self.stop_gradient
         return y
 

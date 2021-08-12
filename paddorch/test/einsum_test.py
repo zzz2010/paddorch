@@ -1,6 +1,7 @@
 import numpy as np
 import paddorch
 import paddle
+import torch
 
 def test_einsum(equnation,size1_size2):
     size1=size1_size2[0]
@@ -11,7 +12,20 @@ def test_einsum(equnation,size1_size2):
     C=paddorch.einsum(equnation, A,B)
     C.sum().backward()
     print(equnation,size1_size2)
-    return C.mean()
+    paddle_grad=A.gradient()
+
+    A=torch.from_numpy(A.numpy())
+    A.requires_grad=True
+    B=torch.from_numpy(B.numpy())
+    B.requires_grad=True
+
+    C=torch.einsum(equnation, A,B)
+    C.sum().backward( )
+    torch_grad=A.grad.numpy()
+    grad_diff=torch.FloatTensor(torch_grad-paddle_grad).abs().max()
+    print(float(grad_diff))
+    assert  grad_diff<1e-3, "%.4f , %.4f"%(torch_grad.mean(),paddle_grad.mean())
+
     # print("A.grad",A.gradient().mean())
     # print("B.grad",A.gradient().mean())
 
