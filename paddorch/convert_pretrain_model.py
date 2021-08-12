@@ -63,7 +63,9 @@ def load_pytorch_pretrain_model_remove_prefix(paddle_model, pytorch_state_dict,p
     torch_key_set=set(torch_key_list)
     paddle_key_set=set(paddle_key_list)
     paddle_unique_keys=paddle_key_set-torch_key_set
-
+    print("paddle_unique_keys",paddle_unique_keys)
+    missingkeys = torch_key_set - paddle_key_set
+    print("torch_unique_keys", missingkeys)
     # _fast_init=True
     # if _fast_init:
     #     # retrieve unintialized modules and initialize

@@ -49,6 +49,7 @@ paddle.Tensor.reshape=paddorch.Tensor.reshape
 paddle.Tensor.shape_orig=paddle.Tensor.shape
 paddle.Tensor.shape=paddorch.Tensor.shape
 # paddle.Tensor.__setitem__=paddorch.Tensor.__setitem__
+# paddle.Tensor.__getitem__origin=paddle.Tensor.__getitem__
 # paddle.Tensor.__getitem__=paddorch.Tensor.__getitem__
 paddle.Tensor.index_copy_=paddorch.Tensor.index_copy_
 paddle.Tensor.index_copy=paddorch.Tensor.index_copy
@@ -79,6 +80,12 @@ paddle.Tensor.chunk=paddorch.Tensor.chunk
 paddle.Tensor.__invert__=paddorch.Tensor.__invert__
 paddle.Tensor.split=paddorch.Tensor.split
 paddle.Tensor.device=paddorch.Tensor.device
+paddle.Tensor.type_as=paddorch.Tensor.type_as
+paddle.Tensor.new_tensor=paddorch.Tensor.new_tensor
+paddle.Tensor.__or__=paddorch.Tensor.__or__
+
+
+
 # from functools import partial
 # def monkeypatch(paddle_tensor):
 #     # paddle_tensor.new_full = partial(paddorch.Tensor.new_full, paddle_tensor)

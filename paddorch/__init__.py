@@ -1,5 +1,7 @@
 import paddle.fluid as fluid
 import paddle
+import torch
+
 from . import cuda
 from . import  nn
 from . import sparse
@@ -16,8 +18,9 @@ from . import  vision
 from . import utils
 from . import sparse
 from . import distributed
+
 from paddle import jit
-from paddle import argmax,argsort,argmin
+from paddle import argmax,argsort,argmin,sin
 
 
 
@@ -29,13 +32,12 @@ __version__='0.2.0'
 double="float32"
 bool="bool"
 float="float32"
-long="int32"
+long="int64"
 dtype=paddle.get_default_dtype()
 
-def _softmax_backward_data(grad_output, output,  dim, self):
-    print("_softmax_backward_data not implemented yet")
-    print(grad_output.shape, output.shape)
-    return paddle.zeros_like(grad_output)
+def _softmax_backward_data(grad_out, out,  dim, self):
+
+    return 0
 
 
 def chunk(self, chunks, dim):
@@ -217,8 +219,9 @@ def gather(x,dim,index):
         else:
             reshape_shape=[1]*len(x.shape)
             reshape_shape[k]=x.shape[k]
-            dim_index=paddle.expand( paddle.reshape(paddle.arange(x.shape[k]), reshape_shape), index_shape).flatten()
+            dim_index=paddle.expand( paddle.reshape(paddle.arange(x.shape[k],dtype=index.dtype), reshape_shape), index_shape).flatten()
             nd_index.append(dim_index)
+
     ind2 = paddle.transpose(paddle.stack(nd_index),[1, 0])
     # ind2 = paddle.stack(nd_index).transpose([1, 0])
     paddle_out = paddle.gather_nd(x, ind2).reshape(index_shape)
@@ -253,10 +256,13 @@ def stack(inputs,dim=0,out=None):
         paddle.assign(x,out)
         return out
 def arange(*args,device="",**kwargs):
-    return paddorch.Tensor(np.arange(*args,**kwargs).astype("int32"))
+    return paddle.arange(*args,**kwargs)
+# def arange(end, *, out =None, dtype =None, device =None, requires_grad =False) :
+#     return paddorch.Tensor(np.arange(*args,**kwargs).astype("int32"))
     # if end==0:
     #     return []
     # return varbase_to_tensor(paddle.paddle.range(0, end, step, dtype))
+
 
 def device(name):
     if isinstance(name,int):
@@ -501,7 +507,7 @@ def relu(x):
     return convertTensor(paddle.fluid.layers.relu(x))
 
 
-def softmax(x, dim=-1):
+def softmax(x, dim=-1,dtype=None):
     return convertTensor(paddle.nn.functional.softmax(x,axis=dim))
 
 
@@ -587,9 +593,10 @@ def  allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
 def clamp(x, min=None, max=None):
     return convertTensor(paddle.clip(x,min=min,max=max))
 
+from .einsum import einsum
+# def einsum(equation, *operands):
+#     return convertTensor(np.einsum(equation,*[x.numpy() for x in operands]))
 
-def einsum(equation, *operands):
-    return convertTensor(np.einsum(equation,*[x.numpy() for x in operands]))
 
 
 def repeat(x, *size):
@@ -616,3 +623,26 @@ def erf(x):
 
 def addmm(*args,**kwargs):
     return  convertTensor(paddle.addmm(*args,**kwargs))
+
+def logical_or(a,b):
+    return convertTensor(paddle.logical_or(a,b))
+
+
+def repeat_interleave(x, repeats, dim=None):
+    orig_shape=list(x.shape)
+    if dim is None:
+        dim=1
+        x=x.view(-1,1)
+        size=[1]*len(x.shape)
+        size[dim]=repeats
+        x = paddle.tile(x, size)
+        return convertTensor(x).view(-1)
+    else:
+        if len(orig_shape)==dim+1:
+            x=x.unsqueeze(-1)
+        # x=x.view(-1,1)
+        size=[1]*len(orig_shape)
+        size[-1]=repeats
+        x = paddle.tile(x, size)
+        orig_shape[dim]=-1
+        return convertTensor(x).view(orig_shape)

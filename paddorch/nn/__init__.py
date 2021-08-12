@@ -354,9 +354,13 @@ class Embedding(paddle.nn.Embedding,Module):
         y=super(Embedding, self).forward(input)
         return y
 
-def Dropout(p=0.5, inplace=False):
-    return dygraph.Dropout(p,dropout_implementation='upscale_in_train')
+# def Dropout(p=0.5, inplace=False):
+#     paddle.nn.Dropout
+#     return dygraph.Dropout(p,dropout_implementation='upscale_in_train')
 
+class Dropout(paddle.nn.Dropout,Module):
+    def __init__(self,p=0.5, inplace=False):
+        super().__init__(p=p)
 
 class Upsample(Module):
     """
@@ -1091,7 +1095,7 @@ class LayerNorm(Module ):
 
     def __init__(self,
                  normalized_shape,
-                 epsilon=1e-05,
+                 eps=1e-05,
                  weight_attr=None,
                  bias_attr=None,
                  elementwise_affine=True,
@@ -1104,7 +1108,7 @@ class LayerNorm(Module ):
             bias_attr=False
 
         self._normalized_shape = list(normalized_shape)
-        self._epsilon = epsilon
+        self._epsilon = eps
         self._weight_attr = weight_attr
         self._bias_attr = bias_attr
         param_shape = [np.prod(self._normalized_shape)]

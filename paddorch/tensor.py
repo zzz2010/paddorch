@@ -393,22 +393,22 @@ class Tensor(paddle.Tensor  ):
 
     def __getitem__(self,args):
         from typing import   Iterable
-
-        if isinstance(args, np.ndarray):
-            # print(max(args),min(args),self.shape,len(args),len(set(args)) )
-            args=paddorch.from_numpy(args).long()
-            # print("converted numpy", type(args))
-        if  isinstance(args,paddle.Tensor):
-            if args.dtype==paddle.fluid.core.VarDesc.VarType.BOOL:
-                return convertTensor(paddle.masked_select(self,args))
-            elif args.dtype==paddle.fluid.core.VarDesc.VarType.INT32 or args.dtype==paddle.fluid.core.VarDesc.VarType.INT64:
-                return convertTensor(paddle.index_select(self,args,axis=0))
-        if isinstance(args,Iterable) and (len(args)==2):
-            if isinstance(args[1],paddle.Tensor) and (args[1].dtype==paddle.fluid.core.VarDesc.VarType.BOOL):
-                sel_indices=paddle.masked_select(paddle.arange(len(args[1])),args[1])  #paddle.arange(len(args[1]))[args[1]]
-                return convertTensor(paddle.index_select(self[args[0]],sel_indices,axis=1))
-            elif isinstance(args[0],paddle.Tensor):
-                    return convertTensor(super(Tensor, self).__getitem__(args[0])[args[1]])
+        #
+        # if isinstance(args, np.ndarray):
+        #     # print(max(args),min(args),self.shape,len(args),len(set(args)) )
+        #     args=paddorch.from_numpy(args).long()
+        #     # print("converted numpy", type(args))
+        # if  isinstance(args,paddle.Tensor):
+        #     if args.dtype==paddle.fluid.core.VarDesc.VarType.BOOL:
+        #         return convertTensor(paddle.masked_select(self,args))
+        #     elif args.dtype==paddle.fluid.core.VarDesc.VarType.INT32 or args.dtype==paddle.fluid.core.VarDesc.VarType.INT64:
+        #         return convertTensor(paddle.index_select(self,args,axis=0))
+        # if isinstance(args,Iterable) and (len(args)==2):
+        #     if isinstance(args[1],paddle.Tensor) and (args[1].dtype==paddle.fluid.core.VarDesc.VarType.BOOL):
+        #         sel_indices=paddle.masked_select(paddle.arange(len(args[1])),args[1])  #paddle.arange(len(args[1]))[args[1]]
+        #         return convertTensor(paddle.index_select(self[args[0]],sel_indices,axis=1))
+        #     elif isinstance(args[0],paddle.Tensor):
+        #             return convertTensor(super(Tensor, self).__getitem__(args[0])[args[1]])
         ##handle case using None to expand dimension
         if isinstance(args,Iterable):
             args2=list(args)
@@ -418,7 +418,10 @@ class Tensor(paddle.Tensor  ):
                     self.unsqueeze_(axis=k)
                     args2[k]=slice(None,None,None)
             args=tuple(args2)
-        return convertTensor(super(Tensor, self).__getitem__(args))
+        if getattr(self,'__getitem__origin',None) is None:
+            return convertTensor(super(Tensor, self).__getitem__(args))
+        else:
+            return  self.__getitem__origin(args)
 
 
 
@@ -591,3 +594,17 @@ class Tensor(paddle.Tensor  ):
 
     def split(x, num_or_sections, dim=0):
         return torch.split(x, num_or_sections, dim)
+
+    @staticmethod
+    def new_tensor(self,*args,**kwargs):
+        return paddle.to_tensor(*args,**kwargs)
+        # np_arr=np.asarray(args[0])
+        # dtype=str(np_arr.dtype).split(".")[-1]
+        # kwargs['dtype']=dtype
+        # return  paddorch.Tensor(*args,**kwargs).astype(dtype)
+
+    def type_as(self,x):
+        return self.astype(x.dtype)
+
+    def __or__(self, other):
+        return convertTensor(paddle.logical_or(self,other))

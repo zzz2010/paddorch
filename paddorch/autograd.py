@@ -33,11 +33,11 @@ class Function(Layer):  # type: ignore
 
     @classmethod
     def apply(cls, *args,**kwargs):
+        """ different to pytorch, the forward method can not be defined as static, because need to store some grad cache"""
         function_inst=cls()
-        return function_inst.forward(function_inst, *args,**kwargs)
+        return function_inst.forward(  *args,**kwargs)
 
     def save_for_backward(self,*args):
-        return
         for a in args:
             self.saved_tensors.append(a)
 
