@@ -37,7 +37,7 @@ from paddle.nn import Sequential
 from collections import OrderedDict as ModuleDict
 import warnings
 from paddle.nn import functional as F
-from paddle.nn import LogSigmoid,CrossEntropyLoss,ParameterList,PReLU,NLLLoss,KLDivLoss
+from paddle.nn import LogSigmoid,CrossEntropyLoss,ParameterList,PReLU,NLLLoss,KLDivLoss,GELU
 
 
 def clone_layer(layer):
@@ -465,6 +465,13 @@ class Tanh(Module):
     def forward(self, input):
         return F.tanh(input )
 
+
+class Softmax(Module):
+    def __init__(self, dim=-1):
+        super().__init__()
+        self.dim=dim
+    def forward(self, input):
+        return F.softmax(input,axis=self.dim )
 class MaxPool2d(Module):
     def __init__(self, kernel_size, stride=None, padding=0, dilation=1,
                  return_indices=False, ceil_mode=False):
@@ -1454,3 +1461,4 @@ class Sigmoid(paddle.nn.Sigmoid,Module):
     def extra_repr(self):
         name_str = 'name={}'.format(self.name) if self.name else ''
         return name_str
+

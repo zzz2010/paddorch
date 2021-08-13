@@ -1,5 +1,7 @@
 import paddle.fluid as fluid
 from paddle.fluid.initializer import NumpyArrayInitializer
+
+import paddorch
 import paddorch as torch
 from paddle.nn.functional import softplus
 import paddle
@@ -34,11 +36,16 @@ def dropout(input, p=0.5, training=True, inplace=False):
 def softmax(input, dim=None, _stacklevel=3, dtype=None):
     return torch.Tensor(fluid.layers.softmax(input,axis=dim))
 
-def embedding(x, weight):
-    layer=fluid.dygraph.Embedding( size=weight.shape)
-    # layer.weight.set_value(weight)
+def embedding(x, weight, padding_idx=None, max_norm=None, norm_type=2.0, scale_grad_by_freq=False, sparse=False):
+
+
+    layer=fluid.dygraph.Embedding( size=weight.shape,is_sparse=sparse,padding_idx=padding_idx)
+
     fluid.layers.assign(weight,layer.weight)
-    out=layer(x)
+    out = layer(x)
+    # if norm_type is not None:
+    #     out=paddle.nn.functional.normalize(out, p=norm_type, axis=-1)
+
     return out
 
 
@@ -58,11 +65,14 @@ def batch_norm(x,  running_mean, running_var, weight=None, bias=None,
 
 #TODO: need to do unit test to confirm this function
 def linear(input, weight, bias=None):
-    layer_obj=fluid.dygraph.Linear(input.shape[1],weight.shape[1])
+    if input.shape[-1]!=weight.shape[0]:
+        weight=paddle.transpose(weight,[1,0])
+
+    layer_obj=fluid.dygraph.Linear(input.shape[-1],weight.shape[1])
     fluid.layers.assign(weight,layer_obj.weight)
     if bias is not None:
         fluid.layers.assign(bias, layer_obj.bias)
-    return torch.Tensor(layer_obj(input))
+    return paddorch.convertTensor(layer_obj(input))
 
 def normalize(input, p=2, dim=1, eps=1e-12, out=None):
     return torch.convertTensor( input/paddle.norm(input,p,axis=dim,keepdim=True))

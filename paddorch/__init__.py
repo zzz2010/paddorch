@@ -645,3 +645,7 @@ def repeat_interleave(x, repeats, dim=None):
         x = paddle.tile(x, size)
         orig_shape[dim]=-1
         return convertTensor(x).view(orig_shape)
+
+
+def cumsum(x, dim=None, dtype=None):
+    return  paddle.cumsum(x,axis=dim,dtype=dtype)

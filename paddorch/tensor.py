@@ -273,7 +273,9 @@ class Tensor(paddle.Tensor  ):
         return self
 
     def to(self,*args, **kwargs):
-        if isinstance(args[0],paddle.Tensor):
+        if "dtype" in kwargs:
+            dtype=str(kwargs["dtype"])
+        elif isinstance(args[0],paddle.Tensor):
             dtype=str(args[0].dtype)
             if "64" in dtype:
                 dtype="int32"
@@ -608,3 +610,11 @@ class Tensor(paddle.Tensor  ):
 
     def __or__(self, other):
         return convertTensor(paddle.logical_or(self,other))
+
+
+    def ne(self,x):
+        return convertTensor( self!=x )
+
+
+    def int(self):
+        return  convertTensor(self.astype("int32"))

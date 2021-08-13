@@ -83,6 +83,8 @@ paddle.Tensor.device=paddorch.Tensor.device
 paddle.Tensor.type_as=paddorch.Tensor.type_as
 paddle.Tensor.new_tensor=paddorch.Tensor.new_tensor
 paddle.Tensor.__or__=paddorch.Tensor.__or__
+paddle.Tensor.ne=paddorch.Tensor.ne
+paddle.Tensor.int=paddorch.Tensor.int
 
 
 
