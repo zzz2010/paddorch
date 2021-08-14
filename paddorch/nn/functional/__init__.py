@@ -72,7 +72,7 @@ def linear(input, weight, bias=None):
     fluid.layers.assign(weight,layer_obj.weight)
     if bias is not None:
         fluid.layers.assign(bias, layer_obj.bias)
-    return paddorch.convertTensor(layer_obj(input))
+    return paddorch.convertTensor(layer_obj(input.astype("float32")))
 
 def normalize(input, p=2, dim=1, eps=1e-12, out=None):
     return torch.convertTensor( input/paddle.norm(input,p,axis=dim,keepdim=True))

@@ -10,7 +10,7 @@ import paddorch.nn.functional
 import paddorch.nn.init
 from paddle.fluid import dygraph
 import numpy as np
-from paddle import isinf,isnan,isfinite
+from paddle import isinf,isnan,isfinite,round
 from paddorch.tensor import varbase_to_tensor,Tensor,convertTensor,enable_monkeypatch
 from . import optim
 from . import  vision
@@ -19,7 +19,7 @@ from . import sparse
 from . import distributed
 
 from paddle import jit
-from paddle import argmax,argsort,argmin,sin
+from paddle import argmax,argsort,argmin,sin,log,sign
 
 
 
