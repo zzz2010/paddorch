@@ -358,7 +358,7 @@ class Embedding(paddle.nn.Embedding,Module):
 #     paddle.nn.Dropout
 #     return dygraph.Dropout(p,dropout_implementation='upscale_in_train')
 
-class Dropout(paddle.nn.AlphaDropout,Module):
+class Dropout(paddle.nn.Dropout,Module):
     def __init__(self,p=0.5, inplace=False,):
         super().__init__(p=p )
 
