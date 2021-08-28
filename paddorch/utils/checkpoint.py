@@ -21,7 +21,7 @@ def detach_variable(inputs: Tuple[Any, ...]) -> Tuple[torch.Tensor, ...]:
 
 
 def check_backward_validity(inputs: Iterable[Any]) -> None:
-    if not any(inp.requires_grad for inp in inputs if isinstance(inp, torch.Tensor)):
+    if not any(not inp.stop_gradient for inp in inputs if isinstance(inp, torch.Tensor)):
         warnings.warn("None of the inputs have requires_grad=True. Gradients will be None")
 
 
@@ -54,7 +54,7 @@ def set_device_states(devices, states) -> None:
 
 class CheckpointFunction(torch.autograd.Function):
 
-    @staticmethod
+
     def forward(ctx, run_function, preserve_rng_state, *args):
         check_backward_validity(args)
         ctx.run_function = run_function
@@ -69,12 +69,13 @@ class CheckpointFunction(torch.autograd.Function):
             if torch.cuda._initialized:
                 ctx.had_cuda_in_fwd = True
                 ctx.fwd_gpu_devices, ctx.fwd_gpu_states = get_device_states(*args)
-        ctx.save_for_backward(*args)
-        with torch.no_grad():
-            outputs = run_function(*args)
+        # ctx.save_for_backward(*args)
+        # with torch.no_grad():
+        #     outputs = run_function(*args)
+        outputs = run_function(*args)
         return outputs
 
-    @staticmethod
+
     def backward(ctx, *args):
         if not torch.autograd._is_checkpoint_valid():
             raise RuntimeError("Checkpointing is not compatible with .grad(), please use .backward() if possible")
@@ -99,6 +100,7 @@ class CheckpointFunction(torch.autograd.Function):
         torch.autograd.backward(outputs, args)
         grads = tuple(inp.grad if isinstance(inp, torch.Tensor) else inp
                       for inp in detached_inputs)
+
         return (None, None) + grads
 
 
@@ -160,7 +162,7 @@ def checkpoint(function, *args, **kwargs):
     if kwargs:
         raise ValueError("Unexpected keyword arguments: " + ",".join(arg for arg in kwargs))
 
-    return CheckpointFunction.apply(function, preserve, *args)
+    return CheckpointFunction().apply(function, preserve, *args)
 
 
 def checkpoint_sequential(functions, segments, input, **kwargs):

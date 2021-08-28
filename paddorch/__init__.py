@@ -18,8 +18,8 @@ from . import utils
 from . import sparse
 from . import distributed
 
-from paddle import jit
-from paddle import argmax,argsort,argmin,sin,log,sign
+from paddle import jit,triu,get_cuda_rng_state
+from paddle import argmax,argsort,argmin,sin,log,sign,log2
 
 
 
@@ -31,6 +31,7 @@ __version__='0.2.0'
 double="float32"
 bool="bool"
 float="float32"
+float32="float32"
 long="int64"
 dtype=paddle.get_default_dtype()
 
@@ -649,3 +650,6 @@ def repeat_interleave(x, repeats, dim=None):
 
 def cumsum(x, dim=None, dtype=None):
     return  paddle.cumsum(x,axis=dim,dtype=dtype)
+
+def get_rng_state():
+    return  get_cuda_rng_state()

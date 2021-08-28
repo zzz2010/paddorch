@@ -70,6 +70,14 @@ class Tensor(paddle.Tensor  ):
     @property
     def device(self):
         return str(self.place)
+
+    @property
+    def is_cuda(self):
+        if "cuda" in str(self.place):
+            return True
+        else:
+            return  False
+
     def dim(self):
         return len(self.shape)
 
@@ -618,3 +626,12 @@ class Tensor(paddle.Tensor  ):
 
     def int(self):
         return  convertTensor(self.astype("int32"))
+
+    def triu(self,diagonal=0):
+        return convertTensor(paddorch.triu(self,diagonal=diagonal))
+
+    def fill_diagonal(self,value,wrap=False):
+        diag_v = paddle.diag(self)
+        diag_v = torch.mm(paddle.eye(self.shape[0], self.shape[1]),
+                          paddle.expand_as(diag_v, self)+value)
+        return  self-diag_v

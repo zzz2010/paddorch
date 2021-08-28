@@ -2,7 +2,7 @@ import paddle.fluid as fluid
 import paddorch
 import paddle
 
-
+_initialized=True
 def is_available():
     try:
         fluid.CUDAPlace(0)

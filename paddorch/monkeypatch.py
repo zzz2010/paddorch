@@ -85,6 +85,9 @@ paddle.Tensor.new_tensor=paddorch.Tensor.new_tensor
 paddle.Tensor.__or__=paddorch.Tensor.__or__
 paddle.Tensor.ne=paddorch.Tensor.ne
 paddle.Tensor.int=paddorch.Tensor.int
+paddle.Tensor.triu=paddorch.Tensor.triu
+paddle.Tensor.is_cuda=paddorch.Tensor.is_cuda
+paddle.Tensor.fill_diagonal=paddorch.Tensor.fill_diagonal
 
 
 
