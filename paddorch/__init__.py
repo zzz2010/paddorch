@@ -32,7 +32,7 @@ double="float32"
 bool="bool"
 float="float32"
 float32="float32"
-float32="float16"
+float16="float16"
 long="int64"
 dtype=paddle.get_default_dtype()
 
